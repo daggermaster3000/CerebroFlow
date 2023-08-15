@@ -1,4 +1,4 @@
-# Flow_job
+# CerebroFlow
 A tool to generate csf flow profiles based on a kymographic approach as well as other utilities
 ## Dependencies
 Run the following python script to install the dependencies
