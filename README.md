@@ -31,3 +31,4 @@ if __name__ == "__main__":
 
 ## Utilisation
 For now run FlowJ.py...
+It will run the analysis on an image of choice. There is also a test for threshold but it is incomplete
