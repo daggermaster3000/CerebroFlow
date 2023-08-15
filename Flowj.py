@@ -16,3 +16,4 @@ ky.kymo1(data,name,wiener=False)
 # test_kymo_parms(data,name,wiener=False)
 # test filters (TODO)
 
+ gdf
