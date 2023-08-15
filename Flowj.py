@@ -15,5 +15,3 @@ ky.kymo1(data,name,wiener=False)
 # test thresholds (needs some working on)
 # test_kymo_parms(data,name,wiener=False)
 # test filters (TODO)
-
- gdf
