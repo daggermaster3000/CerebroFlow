@@ -2,3 +2,4 @@
 - Create GUI with for uploading and testing                     []
 - Add normal image to threshold testing                         []
 - Use simplegui instead of matplotlib for testing parameters    [] 
+- Add threshold slider to the main figure                       []
