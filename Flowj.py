@@ -10,8 +10,8 @@ print("Image path: ",path.replace("/","\\"))
 data,name = ky.open_tiff(path.replace("/","\\"))
 
 # run kymo
-ky.kymo1(data,name,wiener=False)
+#ky.kymo1(data,name,wiener=False)
 
 # test thresholds (needs some working on)
-# test_kymo_parms(data,name,wiener=False)
+ky.test_kymo_parms(data,name,wiener=False)
 # test filters (TODO)

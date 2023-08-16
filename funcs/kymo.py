@@ -99,14 +99,16 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     
     # swap axes
     print("Generating kymograph...")
-    kymo = np.swapaxes(images,0,2)
-    kymo = np.swapaxes(images,0,1)
+    #kymo = np.swapaxes(images,0,2)
+    kymo = np.swapaxes(images,0,1).copy()
 
     # rescale the intensities
+    """
     for i in range(len(kymo)):
         kymo[i,:,:] = rescale(kymo[i,:,:],0,1)
         print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
     print()
+    """
     # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
     means = []
     dv_length = len(kymo)
@@ -119,8 +121,10 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     slice_init = 159
 
     # Create the figure and the line that we will manipulate
+    plt.style.use('Solarize_Light2')
     fig, ax = plt.subplots()
-   
+    fig.suptitle("Test threshold",size=20)
+    ax.text(0,0,"Move sliders to begin display")
     
 
     # adjust the main plot to make room for the sliders
@@ -164,7 +168,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
 
         # Generate binary image every pixel that is 1% above the min signal is equal to 1
         binary = np.where(kymo_min > 1.01,1,0)
-
+        ax.clear()
         ax.imshow(binary)
         fig.canvas.draw_idle()
 
@@ -172,14 +176,6 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     # register the update function with each slider
     slice_slider.on_changed(update)
     thresh_slider.on_changed(update)
-
-
-    
-    def filter(event):
-        pass
-    def reset(event):
-        slice_slider.reset()
-        thresh_slider.reset()
 
 
     plt.show()
@@ -251,10 +247,12 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
     #print("Kymograph shape: ",np.shape(kymo))
 
     # rescale the intensities
+    """
     for i in range(len(kymo)):
         kymo[i,:,:] = rescale(kymo[i,:,:],0,1)
         print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
     print()
+    """
     # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
     means = []
     dv_length = len(kymo)
@@ -302,7 +300,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
         # take regions with large enough areas good eccentricity and orientation
             if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
                 # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
-                speed = (1./np.tan(-region.orientation*np.pi/180))*(pixel_size/frame_time)
+                speed = (1./np.tan(-region.orientation*np.pi/180))*(pixel_size/frame_time)/10   # maybe un blem with the units
                 good.append(speed)
    
         # if more than five events detected append to the keepers
@@ -318,7 +316,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
     # plotting
     # setup figure
     if show_plots:
-        with plt.style.context('ggplot'):
+        with plt.style.context('Solarize_Light2'):
             fig = plt.figure(layout="constrained")
             gs = GridSpec(3, 3, figure=fig)
             plot1 = fig.add_subplot(gs[0, :])
