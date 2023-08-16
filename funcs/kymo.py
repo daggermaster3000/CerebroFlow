@@ -13,6 +13,7 @@ from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider, Button, TextBox
+import time
 
 # helper functions
 def open_tiff(Path):
@@ -29,6 +30,7 @@ def cache(image,name):
     """
     A function to save an np.array as .npy binary
     """
+   
     np.save("cache\\"+name.split(".")[0],image)
 
 def rescale(array,min,max):
@@ -68,7 +70,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     _, first_img = img.retrieve()
     dv_pos,width = np.shape(first_img)
     N_images = img.length
-
+    
     # check the cache to see if we haven't already processed the image
     # create cache if non existent
     if "cache" not in os.listdir():
@@ -93,7 +95,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
         images = np.load("cache\\"+name.split(".")[0]+".npy")
     
     # convert to numpy array
-    images = np.array(images)
+    images = np.array(images,dtype='>u2')
     
     # swap axes
     print("Generating kymograph...")
@@ -188,7 +190,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
     A function that generates a csf flow profile based on a kymographic approach
 
     INPUTS:
-        - img
+        - img   [capture object]
         - name
 
     OUTPUTS:
@@ -219,6 +221,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
     if "cache" not in os.listdir():
         os.mkdir("cache")
     print("Input image: ",name)
+
     # process the time lapse to array if it hasnt previously been processed
     if name.split(".")[0]+".npy" not in os.listdir("cache"):    
         if wiener == True:
@@ -238,12 +241,12 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
         images = np.load("cache\\"+name.split(".")[0]+".npy")
     
     # convert to numpy array
-    images = np.array(images)
-    
+    images = np.array(images,dtype='>u2')
+
     # swap axes
     print("Generating kymograph...")
-    kymo = np.swapaxes(images,0,2)
-    kymo = np.swapaxes(images,0,1)
+    #kymo = np.swapaxes(images,0,2).copy()
+    kymo = np.swapaxes(images,0,1).copy()
     raw_kymo = kymo.copy()
     #print("Kymograph shape: ",np.shape(kymo))
 
@@ -315,7 +318,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
     # plotting
     # setup figure
     if show_plots:
-        with plt.style.context('Solarize_Light2'):
+        with plt.style.context('ggplot'):
             fig = plt.figure(layout="constrained")
             gs = GridSpec(3, 3, figure=fig)
             plot1 = fig.add_subplot(gs[0, :])
@@ -349,7 +352,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
             for region in regionprops(labeled_img_array[159]):
                 # take regions with large enough areas
                 if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
-                    # draw rectangle around segmented coins
+                    # draw rectangle around good blobs
                     minr, minc, maxr, maxc = region.bbox
                     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                             fill=False, edgecolor='red', linewidth=1)
@@ -359,12 +362,57 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
                 # Plot grey bands for the standard error
                 plot1.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
 
-            plt.show()
+            # Make a horizontal slider to control the time.
+            axtime = fig.add_axes([0.08, 0.35, 0.2, 0.03])
+            time_slider = Slider(
+                ax=axtime,
+                label='Frame',
+                valmin=0,
+                valmax=300,
+                valinit=0,
+                valstep=1
+            )
+            # Make a vertical slider to control d-v slices
+            axslice = fig.add_axes([0.03, 0.35, 0.02, 0.29])
+            slice_slider = Slider(
+                ax=axslice,
+                label='d-v slice',
+                valmin=0,
+                valmax=300,
+                valinit=0,
+                valstep=1,
+                orientation="vertical"
+            )
+            def update(val,images=images):
+                plot2.imshow(images[time_slider.val])
+                fig.canvas.draw_idle()
+
+            def update_slice(val,images=images):
+                plot4.imshow(raw_kymo[slice_slider.val])
+                plot5.imshow(binary[slice_slider.val])
+                plot3.clear()
+                plot3.title.set_text("5.Kept blobs")
+                plot3.imshow(labeled_img_array[slice_slider.val])
+                for region in regionprops(labeled_img_array[slice_slider.val]):
+                    # take regions with large enough areas
+                    if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
+                        # draw rectangle around good blobs
+                        minr, minc, maxr, maxc = region.bbox
+                        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                                fill=False, edgecolor='red', linewidth=1)
+                        plot3.add_patch(rect)
+                fig.canvas.draw_idle()
+
+            # register the update function with each slider
+            time_slider.on_changed(update)
+            slice_slider.on_changed(update_slice)
+            plt.show() 
+
     return mean_velocities, se_velocities 
     
 
-#if __name__ == "__main__":
-    #path = "Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\PIPELINE_TEST\\BioProtocol_CSFflowMeasurement\\TestFiles\\FlowData\\WT5_2_cropped.tif"
-    #data,name = open_tiff(path)
-    #kymo1(data,name,wiener=False)
+if __name__ == "__main__":
+    path = "Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\PIPELINE_TEST\\BioProtocol_CSFflowMeasurement\\TestFiles\\FlowData\\WT5_2_cropped.tif"
+    data,name = open_tiff(path)
+    kymo1(data,name,wiener=False)
     #test_kymo_parms(data,name,wiener=False)
