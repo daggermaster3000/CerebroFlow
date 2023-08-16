@@ -1,7 +1,7 @@
 # CerebroFlow
 A tool to generate csf flow profiles based on a kymographic approach as well as other utilities
-## Dependencies
-Run the following python script to install the dependencies
+## Requirements
+Run the following python script to install the requirements
 ```python
 import subprocess
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
 ```
 
-## Utilisation
+## Usage
 For now run FlowJ.py...
 It will run the analysis on an image of choice. There is also a test for threshold but it is incomplete
 Will update page and doc later
