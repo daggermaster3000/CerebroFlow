@@ -2,7 +2,8 @@
 A tool to generate csf flow profiles based on a kymographic approach as well as other utilities 
 </br>
 
-![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/3e4a240e-742e-43ef-9cda-ff7a46d60c29)
+![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/f196745d-8573-4f01-adde-7a083a443193)
+
 
 ## Requirements
 Run the following command in the console to install the requirements
