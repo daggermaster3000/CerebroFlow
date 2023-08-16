@@ -332,10 +332,10 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
 
             # set titles
             plot1.title.set_text("1.Flow profile")
-            plot2.title.set_text("2.Raw image")
+            plot2.title.set_text(f"2.Raw image wiener={wiener}")
             plot3.title.set_text("5.Kept blobs")
             plot4.title.set_text("3.Raw kymograph")
-            plot5.title.set_text("4.Binary kymograph")
+            plot5.title.set_text(f"4.Binary kymograph threshold={threshold}")
             
             plot2.imshow(first_img)  
             plot4.imshow(raw_kymo[159])
