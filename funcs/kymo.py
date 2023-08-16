@@ -304,7 +304,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
         # take regions with large enough areas good eccentricity and orientation
             if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
                 # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
-                speed = (1./np.tan(-region.orientation*np.pi/180))*(pixel_size/frame_time)/10   # maybe un blem with the units
+                speed = (1./np.tan(-region.orientation*np.pi/180))*(pixel_size/frame_time)/100   # maybe un blem with the units
                 good.append(speed)
    
         # if more than five events detected append to the keepers
