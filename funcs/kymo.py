@@ -78,16 +78,10 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     print("Input image: ",name)
     # process the time lapse to array if it hasnt previously been processed
     if name.split(".")[0]+".npy" not in os.listdir("cache"):    
-        if wiener == True:
-            for im in img:
-                loop+=1
-                print(f"Processing and Filtering image {np.round(i/N_images*100,1)}%",end = "\r")
-                images.append(wiener(im,filter_size))
-        else:
-            for im in img:
-                loop+=1
-                print(f"Processing image {np.round(loop/N_images*100,1)}%",end = "\r")
-                images.append(im)
+        for im in img:
+            loop+=1
+            print(f"Processing image {np.round(loop/N_images*100,1)}%",end = "\r")
+            images.append(im)
         cache(images,name)
     else:
         # if it already has been processed load it from the cache
@@ -96,7 +90,11 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     
     # convert to numpy array
     images = np.array(images,dtype='>u2')
-    
+    if wiener == True:
+            for im,ind in enumerate(images):
+                loop+=1
+                print(f"Processing and Filtering image {np.round(i/N_images*100,1)}%",end = "\r")
+                images[id] = wiener(im,filter_size)
     # swap axes
     print("Generating kymograph...")
     #kymo = np.swapaxes(images,0,2)
@@ -130,7 +128,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     # adjust the main plot to make room for the sliders
     fig.subplots_adjust(left=0.25, bottom=0.25)
 
-    # Make a horizontal slider to control the frequency.
+    # Make a horizontal slider to control the slice.
     axslice = fig.add_axes([0.25, 0.1, 0.65, 0.03])
     slice_slider = Slider(
         ax=axslice,
@@ -141,7 +139,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
         valstep=1
     )
 
-    # Make a vertically oriented slider to control the amplitude
+    # Make a vertically oriented slider to control the threshold
     axthresh = fig.add_axes([0.1, 0.25, 0.0225, 0.63])
     thresh_slider = Slider(
         ax=axthresh,
@@ -185,27 +183,33 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
     """
     A function that generates a csf flow profile based on a kymographic approach
 
-    INPUTS:
-        - img   [capture object]
-        - name
+    Inputs:
+    ----------
+        - img:capture object
+        - name:str
 
-    OUTPUTS:
+    Outputs:
+    ----------
         - array of means and se velocities
         - plots 
 
-    PARAMETERS:
-            name                    |    type       |    function
-        ----------------------------------------------------------------------------------    
-        - wiener                    |   bool        |   defines whether wiener filter is applied
-        - filter_size               |   tuple       |   kernel size of the wiener filter
-        - pixel_size                |   float       |   pixel size of input img [um]
-        - frame_time                |   float       |   time betweem frames [s]
-        - hardcore thresholding     |   bool        |   rescales between 0 and 1 then applies the thresholding (pretty good when loads of noise)
+    Parameters:
+    ----------
+    wiener:bool 
+            defines whether wiener filter is applied
+    filter_size:tuple 
+            kernel size of the wiener filter
+    pixel_size:float 
+            pixel size of input img [um]
+    frame_time:float
+            time betweem frames [s]
+    hardcore thresholding:bool
+            rescales between 0 and 1 then applies the thresholding (pretty good when loads of noise)
     """
     np.seterr(all='ignore') # ignore numpy warnings
     
     # some variables
-    loop=0
+    loop=0      # for displaying progress bar
     images = []
 
     # get first image of the sequence and height and width
@@ -221,13 +225,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
 
     # process the time lapse to array if it hasnt previously been processed
     if name.split(".")[0]+".npy" not in os.listdir("cache"):    
-        if wiener == True:
-            for im in img:
-                loop+=1
-                print(f"Processing and Filtering image {np.round(i/N_images*100,1)}%",end = "\r")
-                images.append(wiener(im,filter_size))
-        else:
-            for im in img:
+        for im in img:
                 loop+=1
                 print(f"Processing image {np.round(loop/N_images*100,1)}%",end = "\r")
                 images.append(im)
@@ -239,7 +237,11 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
     
     # convert to numpy array
     images = np.array(images,dtype='>u2')
-
+    if wiener == True:
+            for im,ind in enumerate(images):
+                loop+=1
+                print(f"Processing and Filtering image {np.round(i/N_images*100,1)}%",end = "\r")
+                images[id] = wiener(im,filter_size)
     # swap axes
     print("Generating kymograph...")
     #kymo = np.swapaxes(images,0,2).copy()
