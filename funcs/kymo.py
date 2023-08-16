@@ -181,7 +181,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     plt.show()
 
 
-def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.189, frame_time=0.1, show_plots=True):
+def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.189, frame_time=0.1, show_plots=True, hardcore_thresholding=False):
     """
     A function that generates a csf flow profile based on a kymographic approach
 
@@ -194,12 +194,13 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
         - plots 
 
     PARAMETERS:
-            name        |    type       |    function
-        -----------------------------------------------------------------------------    
-        - wiener        |    bool       |   defines whether wiener filter is applied
-        - filter_size   |  tuple        |   kernel size of the wiener filter
-        - pixel_size    |  float        |   pixel size of input img [um]
-        - frame_time    |  float        |   time betweem frames [s]
+            name                    |    type       |    function
+        ----------------------------------------------------------------------------------    
+        - wiener                    |   bool        |   defines whether wiener filter is applied
+        - filter_size               |   tuple       |   kernel size of the wiener filter
+        - pixel_size                |   float       |   pixel size of input img [um]
+        - frame_time                |   float       |   time betweem frames [s]
+        - hardcore thresholding     |   bool        |   rescales between 0 and 1 then applies the thresholding (pretty good when loads of noise)
     """
     np.seterr(all='ignore') # ignore numpy warnings
     
@@ -247,12 +248,13 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
     #print("Kymograph shape: ",np.shape(kymo))
 
     # rescale the intensities
-    """
-    for i in range(len(kymo)):
-        kymo[i,:,:] = rescale(kymo[i,:,:],0,1)
-        print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
-    print()
-    """
+    if hardcore_thresholding:
+
+        for i in range(len(kymo)):
+            kymo[i,:,:] = rescale(kymo[i,:,:],0,1)
+            print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
+        print()
+    
     # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
     means = []
     dv_length = len(kymo)
@@ -298,7 +300,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
         for region in regionprops(labeled_img):
             
         # take regions with large enough areas good eccentricity and orientation
-            if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
+            if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
                 # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
                 speed = (1./np.tan(-region.orientation*np.pi/180))*(pixel_size/frame_time)/10   # maybe un blem with the units
                 good.append(speed)
@@ -349,7 +351,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.18
             plot5.set_xlabel(r"R-C axis [frames]")
             for region in regionprops(labeled_img_array[159]):
                 # take regions with large enough areas
-                if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
+                if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
                     # draw rectangle around good blobs
                     minr, minc, maxr, maxc = region.bbox
                     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
