@@ -6,7 +6,6 @@ and analyse it to generate a csf flow profile (based on Thouvenin et al. 2020)
 import cv2
 import tiffcapture as tc
 import numpy as np
-from PIL import Image
 from scipy.signal import wiener, savgol_filter
 import matplotlib.pyplot as plt
 import os
@@ -172,19 +171,14 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     slice_slider.on_changed(update)
     thresh_slider.on_changed(update)
 
-    # Create a `matplotlib.widgets.Button` 
-    resetax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
-    button = Button(resetax, 'Reset', hovercolor='0.975')
-    axbox = plt.axes([0.1, 0.05, 0.8, 0.075])
-    text_box = TextBox(axbox, 'Test filter', initial="filter size")
+
     
     def filter(event):
         pass
     def reset(event):
         slice_slider.reset()
         thresh_slider.reset()
-    button.on_clicked(reset)
-    text_box.on_submit(filter)
+
 
     plt.show()
 
