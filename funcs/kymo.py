@@ -44,6 +44,130 @@ def rescale(array,min,max):
     
     return scaled_matrix
 
+
+def test_filter(img, name, filter_size=(5,5), threshold = 0.2, pixel_size=0.189, frame_time=0.1, show_plots=True):
+    """
+    A function that lets the user test out different parameters
+    INPUTS:
+        - img
+        - name
+    OUTPUTS:
+        - array of means and se velocities
+        - plots 
+    PARAMETERS:
+            name        type        function
+        - wiener        bool        defines whether wiener filter is applied
+        - filter_size   tuple       kernel size of the wiener filter
+        - pixel_size    float       pixel size of input img [um]
+        - frame_time    float       time betweem frames [s]
+    """
+    np.seterr(all='ignore') # ignore numpy warnings
+    
+    # some variables
+    loop=0
+    images = []
+
+    # get first image of the sequence and height and width
+    _, first_img = img.retrieve()
+    dv_pos,width = np.shape(first_img)
+    N_images = img.length
+    
+    # check the cache to see if we haven't already processed the image
+    # create cache if non existent
+    if "cache" not in os.listdir():
+        os.mkdir("cache")
+    print("Input image: ",name)
+    # process the time lapse to array if it hasnt previously been processed
+    if name.split(".")[0]+".npy" not in os.listdir("cache"):    
+        for im in img:
+            loop+=1
+            print(f"Processing image {np.round(loop/N_images*100,1)}%",end = "\r")
+            images.append(im)
+        cache(images,name)
+    else:
+        # if it already has been processed load it from the cache
+        print("Loading from previous processing!")
+        images = np.load("cache\\"+name.split(".")[0]+".npy")
+    
+    # convert to numpy array
+    images = np.array(images,dtype='>u2')
+    # swap axes
+    print()
+    print("Generating kymograph...")
+    #kymo = np.swapaxes(images,0,2)
+    kymo = np.swapaxes(images,0,1).copy()
+
+    # rescale the intensities
+    """
+    for i in range(len(kymo)):
+        kymo[i,:,:] = rescale(kymo[i,:,:],0,1)
+        print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
+    """
+    print()
+   
+    # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
+    means = []
+    dv_length = len(kymo)
+    for dv in range(dv_length):
+        means.append(np.mean(kymo[dv,:,:]))
+
+
+    # Define initial parameters
+    thresh_init = 5
+    slice_init = 0
+
+    # Create the figure and the line that we will manipulate
+    plt.style.use('Solarize_Light2')
+    fig, ax = plt.subplots()
+    fig.suptitle("Wiener Filter Test",size=20)
+    ax.text(0,0,"Move sliders to begin display")
+    
+
+    # adjust the main plot to make room for the sliders
+    fig.subplots_adjust(left=0.25, bottom=0.25)
+
+    # Make a horizontal slider to control the slice.
+    axslice = fig.add_axes([0.25, 0.1, 0.65, 0.03])
+    slice_slider = Slider(
+        ax=axslice,
+        label='Frames',
+        valmin=0,
+        valmax=N_images,
+        valinit=slice_init,
+        valstep=1
+    )
+
+    # Make a vertically oriented slider to control the threshold
+    axthresh = fig.add_axes([0.1, 0.25, 0.0225, 0.63])
+    thresh_slider = Slider(
+        ax=axthresh,
+        label="Filter size",
+        valmin=0,
+        valmax=50,
+        valinit=thresh_init,
+        orientation="vertical",
+        valstep=1
+    )
+
+
+    # The function to be called anytime a slider's value changes
+    def update(val,kymo=kymo,means=means,width=width):
+        filter_size = (thresh_slider.val,thresh_slider.val)
+        display = wiener(images[slice_slider.val],filter_size).copy()
+        
+        ax.clear()
+        ax.imshow(display)
+        fig.canvas.draw_idle()
+
+
+    # register the update function with each slider
+    slice_slider.on_changed(update)
+    thresh_slider.on_changed(update)
+
+
+    plt.show()
+
+
 def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel_size=0.189, frame_time=0.1, show_plots=True):
     """
     A function that lets the user test out different parameters
