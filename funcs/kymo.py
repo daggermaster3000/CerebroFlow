@@ -96,6 +96,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
                 print(f"Processing and Filtering image {np.round(i/N_images*100,1)}%",end = "\r")
                 images[id] = wiener(im,filter_size)
     # swap axes
+    print()
     print("Generating kymograph...")
     #kymo = np.swapaxes(images,0,2)
     kymo = np.swapaxes(images,0,1).copy()
@@ -105,8 +106,9 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     for i in range(len(kymo)):
         kymo[i,:,:] = rescale(kymo[i,:,:],0,1)
         print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
-    print()
     """
+    print()
+   
     # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
     means = []
     dv_length = len(kymo)
@@ -179,7 +181,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     plt.show()
 
 
-def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.189, frame_time=0.1, show_plots=True, hardcore_thresholding=False):
+def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel_size=0.189, frame_time=0.1, show_plots=True, hardcore_thresholding=False):
     """
     A function that generates a csf flow profile based on a kymographic approach
 
@@ -237,12 +239,15 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
     
     # convert to numpy array
     images = np.array(images,dtype='>u2')
-    if wiener == True:
-            for im,ind in enumerate(images):
+    i = 0
+    if wiener_set == True:
+            for ind,im in enumerate(images):
                 loop+=1
                 print(f"Processing and Filtering image {np.round(i/N_images*100,1)}%",end = "\r")
-                images[id] = wiener(im,filter_size)
+                images[ind] = wiener(im,filter_size)
+                i+=1
     # swap axes
+    print()
     print("Generating kymograph...")
     #kymo = np.swapaxes(images,0,2).copy()
     kymo = np.swapaxes(images,0,1).copy()
@@ -296,13 +301,13 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
     for i in range(0,dv_pos-N_avg):
         print(f"Detecting and processing blobs for d-v positions: {np.round(i/(dv_pos-N_avg)*100)}%",end = "\r")
         _, labeled_img, stats, centroids = cv2.connectedComponentsWithStats(binary[i].astype(np.uint8), connectivity=8)
-        #labeled_img = label(binary[i],background=0)
+        # labeled_img = label(binary[i],background=0)
         labeled_img_array.append(labeled_img)
         good = []
         for region in regionprops(labeled_img):
             
         # take regions with large enough areas good eccentricity and orientation
-            if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
+            if (region.area < 100) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
                 # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
                 speed = (1./np.tan(-region.orientation*np.pi/180))*(pixel_size/frame_time)/100   # maybe un blem with the units
                 good.append(speed)
@@ -332,15 +337,15 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
 
             # set titles
             plot1.title.set_text("1.Flow profile")
-            plot2.title.set_text(f"2.Raw image wiener={wiener}")
+            plot2.title.set_text(f"2.Raw image wiener={wiener_set}")
             plot3.title.set_text("5.Kept blobs")
             plot4.title.set_text("3.Raw kymograph")
             plot5.title.set_text(f"4.Binary kymograph threshold={threshold}")
             
             plot2.imshow(first_img)  
-            plot4.imshow(raw_kymo[159])
-            plot5.imshow(binary[159])
-            plot3.imshow(labeled_img_array[159])
+            plot4.imshow(raw_kymo[0])
+            plot5.imshow(binary[0])
+            plot3.imshow(labeled_img_array[0])
             
             # set labels
             plot1.set_xlabel(r"Dorso-ventral position [$\mu$m]")
@@ -351,18 +356,19 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
             plot4.set_xlabel(r"R-C axis [frames]")
             plot5.set_ylabel(f"Time [{frame_time} s]")
             plot5.set_xlabel(r"R-C axis [frames]")
-            for region in regionprops(labeled_img_array[159]):
+            # initial image for plot 3
+            for region in regionprops(labeled_img_array[0]):
                 # take regions with large enough areas
-                if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
+                if (region.area < 100) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
                     # draw rectangle around good blobs
                     minr, minc, maxr, maxc = region.bbox
                     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                             fill=False, edgecolor='red', linewidth=1)
                     plot3.add_patch(rect)
-                dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
-                plot1.plot(dv_axis,mean_velocities) 
-                # Plot grey bands for the standard error
-                plot1.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
+            dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
+            plot1.plot(dv_axis,mean_velocities) 
+            # Plot grey bands for the standard error
+            plot1.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
 
             # Make a horizontal slider to control the time.
             axtime = fig.add_axes([0.08, 0.35, 0.2, 0.03])
@@ -370,7 +376,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
                 ax=axtime,
                 label='Frame',
                 valmin=0,
-                valmax=300,
+                valmax=N_images,
                 valinit=0,
                 valstep=1
             )
@@ -380,7 +386,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
                 ax=axslice,
                 label='d-v slice',
                 valmin=0,
-                valmax=300,
+                valmax=dv_pos,
                 valinit=0,
                 valstep=1,
                 orientation="vertical"
@@ -394,7 +400,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
                 plot5.imshow(binary[slice_slider.val])
                 plot3.clear()
                 plot3.title.set_text("5.Kept blobs")
-                plot3.imshow(labeled_img_array[slice_slider.val])
+                plot3.imshow(binary[slice_slider.val])
                 for region in regionprops(labeled_img_array[slice_slider.val]):
                     # take regions with large enough areas
                     if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
@@ -404,6 +410,7 @@ def kymo1(img, name, wiener, filter_size=(5,5), threshold = 0.9, pixel_size=0.18
                                                 fill=False, edgecolor='red', linewidth=1)
                         plot3.add_patch(rect)
                 fig.canvas.draw_idle()
+                
 
             # register the update function with each slider
             time_slider.on_changed(update)

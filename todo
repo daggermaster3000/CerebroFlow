@@ -3,3 +3,6 @@
 - Add normal image to threshold testing                         []
 - Use simplegui instead of matplotlib for testing parameters    [] 
 - Add threshold slider to the main figure                       []
+- Write batch process                                           []
+- Add Lucy-Richardson filter                                    []
+- Add an image of a fish to the main figure                     []
