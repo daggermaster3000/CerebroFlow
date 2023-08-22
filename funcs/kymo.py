@@ -14,8 +14,8 @@ import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider, Button, TextBox
 import time
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import PySimpleGUI as sg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 # helper functions
 def open_tiff(Path):
@@ -452,7 +452,7 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
     # setup figure
     if show_plots:
         with plt.style.context('Solarize_Light2'):
-            fig = plt.figure(layout="constrained",figsize=(800,800))
+            fig = plt.figure(layout="constrained")
             gs = GridSpec(3, 3, figure=fig)
             plot1 = fig.add_subplot(gs[0, :])
             plot2 = fig.add_subplot(gs[1, :])
@@ -496,32 +496,70 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
             # Plot grey bands for the standard error
             plot1.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
             
-            # ------------------------------- Beginning of Matplotlib helper code -----------------------
+        def draw_figure_w_toolbar(canvas, fig, canvas_toolbar):
+            if canvas.children:
+                for child in canvas.winfo_children():
+                    child.destroy()
+            if canvas_toolbar.children:
+                for child in canvas_toolbar.winfo_children():
+                    child.destroy()
+            figure_canvas_agg = FigureCanvasTkAgg(fig, master=canvas)
+            figure_canvas_agg.draw()
+            toolbar = Toolbar(figure_canvas_agg, canvas_toolbar)
+            toolbar.update()
+            figure_canvas_agg.get_tk_widget().pack(side='right', fill='both', expand=1)
 
-            def draw_figure(canvas, figure):
-                figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
-                figure_canvas_agg.draw()
-                figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=True)
-                return figure_canvas_agg
 
-            # ------------------------------- Beginning of GUI CODE -------------------------------
+        class Toolbar(NavigationToolbar2Tk):
+            def __init__(self, *args, **kwargs):
+                super(Toolbar, self).__init__(*args, **kwargs)
 
-            # define the window layout
-            layout = [[sg.Text('Plot test')],
-                    [sg.Canvas(key='-CANVAS-')],
-                    [sg.Button('Ok')]
-                    ]
 
-            # create the form and show it without the plot
-            window = sg.Window('CSF Profiler', layout, finalize=True, element_justification='center', font='Helvetica 18',resizable=True)
+        # ------------------------------- PySimpleGUI CODE
 
-            # add the plot to the window
-            fig_canvas_agg = draw_figure(window['-CANVAS-'].TKCanvas, fig)
+        layout = [
+            [sg.B('Plot'), sg.B('Exit')],
+            [sg.T('Controls:')],
+            [sg.Canvas(key='controls_cv')],
+            [sg.T('Figure:')],
+            [sg.Column(
+                layout=[
+                    [sg.Canvas(key='fig_cv',
+                            size=(600 * 2, 900)
+                            )]
+                ],
+                background_color='#DAE0E6',
+                pad=(0, 0)
+            )],
+            [sg.B('Alive?')],
+            [sg.Slider(range=(10, 30), default_value=12,
+            expand_x=True, enable_events=True,
+            orientation='horizontal', key='-SL-time-')]
+        ]
+        sg.theme('SandyBeach')
 
+        window = sg.Window('CSF profiler', layout,resizable=True)
+
+        while True:
             event, values = window.read()
+            print(event, values)
+            if event in (sg.WIN_CLOSED, 'Exit'):  # always,  always give a way out!
+                break
+            elif event == 'Plot':
+                DPI = fig.get_dpi()
+                fig.set_size_inches(600 * 2 / float(DPI), 900 / float(DPI))
+                # ------------------------------- Instead of plt.show()
+                draw_figure_w_toolbar(window['fig_cv'].TKCanvas, fig, window['controls_cv'].TKCanvas)
+            elif event == '-SL-time-':
+                plot2.clear()
+                plot2.title.set_text(f"2.Raw image wiener={wiener_set}")
+                plot2.set_xlabel(r"R-C axis [frames]")
+                plot2.set_ylabel(r"D-V axis [frames]")
+                plot2.imshow(images[int(values['-SL-time-'])])
+                plot2.hlines(int(values['-SL-time-']),0,dv_pos-1)
+                draw_figure_w_toolbar(window['fig_cv'].TKCanvas, fig, window['controls_cv'].TKCanvas)
 
-            window.close()
-
+        window.close()
 
     if save:
         print("saving figure")
