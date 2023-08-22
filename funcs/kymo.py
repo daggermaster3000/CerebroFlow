@@ -14,6 +14,8 @@ import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider, Button, TextBox
 import time
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import PySimpleGUI as sg
 
 # helper functions
 def open_tiff(Path):
@@ -450,7 +452,7 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
     # setup figure
     if show_plots:
         with plt.style.context('Solarize_Light2'):
-            fig = plt.figure(layout="constrained")
+            fig = plt.figure(layout="constrained",figsize=(800,800))
             gs = GridSpec(3, 3, figure=fig)
             plot1 = fig.add_subplot(gs[0, :])
             plot2 = fig.add_subplot(gs[1, :])
@@ -493,58 +495,33 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
             plot1.plot(dv_axis,mean_velocities) 
             # Plot grey bands for the standard error
             plot1.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
+            
+            # ------------------------------- Beginning of Matplotlib helper code -----------------------
 
-            # Make a horizontal slider to control the time.
-            axtime = fig.add_axes([0.08, 0.35, 0.2, 0.03])
-            time_slider = Slider(
-                ax=axtime,
-                label='Frame',
-                valmin=0,
-                valmax=N_images,
-                valinit=0,
-                valstep=1
-            )
-            # Make a vertical slider to control d-v slices
-            axslice = fig.add_axes([0.03, 0.35, 0.02, 0.29])
-            slice_slider = Slider(
-                ax=axslice,
-                label='d-v slice',
-                valmin=0,
-                valmax=dv_pos-1,
-                valinit=0,
-                valstep=1,
-                orientation="vertical"
-            )
-            def update(val,images=images):
-                plot2.imshow(images[time_slider.val])
-                
-                fig.canvas.draw_idle()
+            def draw_figure(canvas, figure):
+                figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+                figure_canvas_agg.draw()
+                figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=True)
+                return figure_canvas_agg
 
-            def update_slice(val,images=images):
-                plot4.imshow(raw_kymo[slice_slider.val])
-                plot5.imshow(binary[slice_slider.val])
-                plot3.clear()
-                plot3.title.set_text("5.Kept blobs")
-                plot3.imshow(binary[slice_slider.val])
-                plot2.clear()
-                plot2.imshow(images[time_slider.val])
-                plot2.hlines(slice_slider.val,0,width-1, colors=['red'],label="Current slice")
-                plot2.legend()
-                for region in regionprops(labeled_img_array[slice_slider.val]):
-                    # take regions with large enough areas
-                    if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
-                        # draw rectangle around good blobs
-                        minr, minc, maxr, maxc = region.bbox
-                        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                                fill=False, edgecolor='red', linewidth=1)
-                        plot3.add_patch(rect)
-                fig.canvas.draw_idle()
-                
+            # ------------------------------- Beginning of GUI CODE -------------------------------
 
-            # register the update function with each slider
-            time_slider.on_changed(update)
-            slice_slider.on_changed(update_slice)
-            plt.show() 
+            # define the window layout
+            layout = [[sg.Text('Plot test')],
+                    [sg.Canvas(key='-CANVAS-')],
+                    [sg.Button('Ok')]
+                    ]
+
+            # create the form and show it without the plot
+            window = sg.Window('CSF Profiler', layout, finalize=True, element_justification='center', font='Helvetica 18',resizable=True)
+
+            # add the plot to the window
+            fig_canvas_agg = draw_figure(window['-CANVAS-'].TKCanvas, fig)
+
+            event, values = window.read()
+
+            window.close()
+
 
     if save:
         print("saving figure")
