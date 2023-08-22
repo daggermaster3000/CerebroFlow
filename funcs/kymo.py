@@ -510,7 +510,7 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
                 ax=axslice,
                 label='d-v slice',
                 valmin=0,
-                valmax=dv_pos,
+                valmax=dv_pos-1,
                 valinit=0,
                 valstep=1,
                 orientation="vertical"
