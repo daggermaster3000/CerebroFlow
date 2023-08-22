@@ -10,9 +10,9 @@ print("Image path: ",path.replace("/","\\"))
 data,name = ky.open_tiff(path.replace("/","\\"))
 
 # run kymo
-#mean_velocities = ky.kymo1(data,name,wiener_set=True)
+mean_velocities = ky.kymo1(data,name,wiener_set=False,save=True,show_plots=True)
 #print(mean_velocities)
 # test thresholds (needs some working on)
-# ky.test_kymo_parms(data,name,wiener=False)
+#ky.test_kymo_parms(data,name,wiener=False)
 # test filters (TODO)
-ky.test_filter(data,name)
+# ky.test_filter(data,name)

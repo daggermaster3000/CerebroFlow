@@ -305,7 +305,7 @@ def test_kymo_parms(img, name, wiener, filter_size=(5,5), threshold = 0.2, pixel
     plt.show()
 
 
-def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel_size=0.189, frame_time=0.1, show_plots=True, hardcore_thresholding=False):
+def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel_size=0.189, frame_time=0.1, show_plots=True, hardcore_thresholding=False, save=False):
     """
     A function that generates a csf flow profile based on a kymographic approach
 
@@ -483,7 +483,7 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
             # initial image for plot 3
             for region in regionprops(labeled_img_array[0]):
                 # take regions with large enough areas
-                if (region.area < 100) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
+                if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
                     # draw rectangle around good blobs
                     minr, minc, maxr, maxc = region.bbox
                     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -517,6 +517,7 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
             )
             def update(val,images=images):
                 plot2.imshow(images[time_slider.val])
+                
                 fig.canvas.draw_idle()
 
             def update_slice(val,images=images):
@@ -525,6 +526,10 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
                 plot3.clear()
                 plot3.title.set_text("5.Kept blobs")
                 plot3.imshow(binary[slice_slider.val])
+                plot2.clear()
+                plot2.imshow(images[time_slider.val])
+                plot2.hlines(slice_slider.val,0,width-1, colors=['red'],label="Current slice")
+                plot2.legend()
                 for region in regionprops(labeled_img_array[slice_slider.val]):
                     # take regions with large enough areas
                     if (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
@@ -540,6 +545,20 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
             time_slider.on_changed(update)
             slice_slider.on_changed(update_slice)
             plt.show() 
+
+    if save:
+        print("saving figure")
+        fig, ax = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
+        plt.style.use('Solarize_Light2')
+        ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
+        ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
+        dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
+        ax.plot(dv_axis,mean_velocities) 
+        # Plot grey bands for the standard error
+        ax.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
+        ax.legend()
+        fig.savefig(name.split(".")[0]+'.png')   # save the figure to file
+        plt.close(fig)    # close the figure window
 
     return mean_velocities, se_velocities 
     
