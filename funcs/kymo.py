@@ -296,6 +296,7 @@ class Kymo:
             # take regions with large enough areas good eccentricity and orientation
                 if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1):
                     # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
+                    # note: no need to convert to rad as np takes rad directly and regionprops returns and angle in rad
                     speed = (1./np.tan(-region.orientation))*(self.pixel_size/self.frame_time)   # maybe un blem with the units
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
