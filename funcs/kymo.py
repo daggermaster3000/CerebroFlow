@@ -294,9 +294,9 @@ class Kymo:
             # iterate over every blob
             for region in regionprops(labeled_img):
             # take regions with large enough areas good eccentricity and orientation
-                if (region.area < 100) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):
+                if (region.area < 200) and (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1):
                     # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
-                    speed = (1./np.tan(-region.orientation*np.pi/180))*(self.pixel_size/self.frame_time)   # maybe un blem with the units
+                    speed = (1./np.tan(-region.orientation))*(self.pixel_size/self.frame_time)   # maybe un blem with the units
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
                     rects.append(mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -312,8 +312,8 @@ class Kymo:
     
     def get_mean_vel(self, velocities: np.ndarray):
         # compute the mean velocities and se
-        mean_velocities = savgol_filter([np.mean(i) for i in velocities],10,2) # compute the mean velocities for every dv position and smooth them
-        se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],10,2) # compute the se for every dv position and smooth them
+        mean_velocities = savgol_filter([np.mean(i) for i in velocities],20,2) # compute the mean velocities for every dv position and smooth them
+        se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,2) # compute the se for every dv position and smooth them
         return mean_velocities, se_velocities
 
     # helper functions
@@ -883,4 +883,4 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
 if __name__ == "__main__":
     path = "Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\PIPELINE_TEST\\BioProtocol_CSFflowMeasurement\\TestFiles\\FlowData\\WT5_2_cropped.tif"
     exp1 = Kymo(path, pixel_size=0.189, frame_time=0.1)
-    exp1.generate_kymo(threshold=0.9)
+    exp1.generate_kymo(threshold=0.5)
