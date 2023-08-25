@@ -17,7 +17,7 @@ import time
 
 
 class Kymo:
-    def __init__(self,path, pixel_size, frame_time):
+    def __init__(self,path, pixel_size, frame_time, filter_size=None):
         self.path = path
         self.pixel_size = pixel_size    # in um
         self.frame_time = frame_time    # in s
@@ -40,49 +40,110 @@ class Kymo:
         self.init_bin()
         # convert to numpy array
         self.images = np.array(self.images,dtype='>u2')
-        
 
-    def generate_kymo(self, threshold: float, filter_size: tuple = None, thresholding_method: str = "Quantile"):
-        self.threshold = threshold
         if filter_size != None:
+
             # if filter size is passed, filter images
             self.filtered_images = np.zeros_like(self.images)   # pre allocate to be faster
             self.filtered_images = self.filter_wiener(self.images)
 
             # generate kymograph
             self.kymo = self.swap_axes(self.filtered_images)
-            self.raw_kymo = np.zeros_like(self.kymo)    # pre allocate to be faster
-            self.raw_kymo = self.kymo.copy()    # keep a copy of the non nornalized kymograph
-
-            # threshold 
-            self.kymo = self.thresholding(self.kymo,threshold)
-
-            # convert to binary
-            self.binary_kymo = self.binary(self.kymo)
-
-            # detect blobs
-            self.velocities = self.get_velocities(self.binary_kymo)
-
-           # process the mean and sd of all the velocities
-            self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
 
         else:
+
             # generate kymograph
             self.kymo = self.swap_axes(self.images)
-            self.raw_kymo = np.zeros_like(self.kymo)    # pre allocate to be faster
-            self.raw_kymo = self.kymo.copy()    # keep a copy of the non non-normalized kymograph
+        
+    def test_threshold(self):
+        # generate kymograph
+        self.kymo = self.swap_axes(self.images)
+        # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
+        means = []
+        dv_length = len(self.kymo)
+        for dv in range(dv_length):
+            means.append(np.mean(self.kymo[dv,:,:]))
 
-            # threshold 
-            self.kymo = self.thresholding(self.kymo, threshold=threshold, method="Quantile")
+        # Define initial parameters
+        thresh_init = 0.5
+        slice_init = 0
 
-            # convert to binary
-            self.binary_kymo = self.binary(self.kymo)
+        # Create the figure and the line that we will manipulate
+        plt.style.use('Solarize_Light2')
+        fig, ax = plt.subplots()
+        fig.suptitle("Test threshold",size=20)
+        ax.text(0,0,"Move sliders to begin display")
+        
 
-            # detect blobs
-            self.velocities = self.get_velocities(self.binary_kymo)
+        # adjust the main plot to make room for the sliders
+        fig.subplots_adjust(left=0.25, bottom=0.25)
 
-            # process the mean and sd of all the velocities
-            self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
+        # Make a horizontal slider to control the slice.
+        axslice = fig.add_axes([0.25, 0.1, 0.65, 0.03])
+        slice_slider = Slider(
+            ax=axslice,
+            label='d-v slice',
+            valmin=0,
+            valmax=self.dv_pos,
+            valinit=slice_init,
+            valstep=1
+        )
+
+        # Make a vertically oriented slider to control the threshold
+        axthresh = fig.add_axes([0.1, 0.25, 0.0225, 0.63])
+        thresh_slider = Slider(
+            ax=axthresh,
+            label="Threshold",
+            valmin=0,
+            valmax=1,
+            valinit=thresh_init,
+            orientation="vertical"
+        )
+
+
+        # The function to be called anytime a slider's value changes
+        def update(val,kymo=self.kymo,means=means,width=self.width):
+
+            central_canal = [np.max(means), np.argmax(means)]   # returns the max intensity and location of th cc
+            min = np.quantile(kymo[central_canal[1]], thresh_slider.val) # calculate the min value based on the threshold at the cc position
+            kymo_min = kymo.copy()[slice_slider.val]
+            kymo_min[kymo_min < min]  = min # all values smaller than min become min
+            kymo_min = self.rescale(kymo_min,1,2) # rescaling between 1 and 2
+
+            # next we normalize the kymograph by the average value with respect to time
+            avg_vs_time = kymo_min.mean().transpose()
+            kymo_min = np.divide(kymo_min,avg_vs_time)
+
+            # Generate binary image every pixel that is 1% above the min signal is equal to 1
+            binary = np.where(kymo_min > 1.01,1,0)
+            ax.clear()
+            ax.imshow(binary)
+            fig.canvas.draw_idle()
+
+        # register the update function with each slider
+        slice_slider.on_changed(update)
+        thresh_slider.on_changed(update)
+
+        plt.show()
+
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile"):
+
+        self.threshold = threshold
+       
+        self.raw_kymo = np.zeros_like(self.kymo)    # pre allocate to be faster
+        self.raw_kymo = self.kymo.copy()    # keep a copy of the non nornalized kymograph
+
+        # threshold 
+        self.kymo = self.thresholding(self.kymo, threshold = threshold, method = thresholding_method)
+
+        # convert to binary
+        self.binary_kymo = self.binary(self.kymo)
+
+        # detect blobs
+        self.velocities = self.get_velocities(self.binary_kymo)
+
+        # process the mean and sd of all the velocities
+        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
 
         # show plot
         self.plot(show_plots=True, save=False)  
@@ -884,4 +945,5 @@ def kymo1(img, name, wiener_set=False, filter_size=(5,5), threshold = 0.9, pixel
 if __name__ == "__main__":
     path = "Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\PIPELINE_TEST\\BioProtocol_CSFflowMeasurement\\TestFiles\\FlowData\\WT5_2_cropped.tif"
     exp1 = Kymo(path, pixel_size=0.189, frame_time=0.1)
-    exp1.generate_kymo(threshold=0.5)
+    # exp1.generate_kymo(threshold=0.5)
+    exp1.test_threshold()
