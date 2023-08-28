@@ -6,13 +6,8 @@ import PySimpleGUI as sg
 path = sg.popup_get_file("", no_window=True, default_extension=".tif")
 print("Image path: ",path.replace("/","\\"))
 
-# open time lapse
-data,name = ky.open_tiff(path.replace("/","\\"))
+exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=0.189, frame_time=0.1)
 
-# run kymo
-mean_velocities = ky.kymo1(data,name,wiener_set=False,save=True,show_plots=True,threshold=0.55)
-#print(mean_velocities)
-# test thresholds (needs some working on)
-# ky.test_kymo_parms(data,name,wiener=False)
-# test filters (TODO)
-# ky.test_filter(data,name)
+exp1.test_filter()
+exp1.test_threshold()
+exp1.generate_kymo(threshold=0.6)

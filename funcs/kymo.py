@@ -196,7 +196,7 @@ class Kymo:
     def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None):
         
         print(f'Analyzing {self.name}:\n')
-        print(f'-threshold: {threshold} \n-method: {thresholding_method} \n-filter size: {filter_size}')
+        print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}')
 
         self.threshold = threshold
         
