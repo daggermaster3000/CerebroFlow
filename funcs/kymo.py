@@ -195,7 +195,7 @@ class Kymo:
 
     def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None):
         
-        print(f'Analyzing {self.name}')
+        print(f'Analyzing {self.name}:\n')
         print(f'-threshold: {threshold} \n-method: {thresholding_method} \n-filter size: {filter_size}')
 
         self.threshold = threshold
@@ -229,10 +229,10 @@ class Kymo:
 
         # show plot
         self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size) 
-        
+
         print("\033[0;37;92m",end="") 
         print("Done! ")
-        print("\033[1;37;40m",end="")
+        print("\033[0;37;40m")
         
         return self.mean_velocities, self.se_velocities
     
