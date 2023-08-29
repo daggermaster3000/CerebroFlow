@@ -236,7 +236,7 @@ class Kymo:
         
         return self.mean_velocities, self.se_velocities
     
-    def plot(self, save_profile: bool, save_display: bool, init_slice=159,filter_size=None):
+    def plot(self, save_profile: bool, save_display: bool, init_slice=0,filter_size=None):
         # plotting
         # setup figure
     

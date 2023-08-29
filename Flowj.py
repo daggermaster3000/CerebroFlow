@@ -8,6 +8,6 @@ print("Image path: ",path.replace("/","\\"))
 
 exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=0.189, frame_time=0.1)
 
-exp1.test_filter()
-exp1.test_threshold()
+#exp1.test_filter()
+#exp1.test_threshold()
 exp1.generate_kymo(threshold=0.5)
