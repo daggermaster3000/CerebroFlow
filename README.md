@@ -13,17 +13,15 @@ pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture
 ```
 
 ## Usage (for now)
-1. Run FlowJ.py
-2. You will be prompted to choose a .tif file
-3. CSF profiling will be ran, displaying plots and returning an array of the average velocities
+Example code:
 ```python
 from funcs import kymo as ky
 import PySimpleGUI as sg
 
-path = sg.popup_get_file("", no_window=True, default_extension=".tif")
-print("Image path: ",path.replace("/","\\"))
+path = sg.popup_get_file("", no_window=True, default_extension=".tif")  # prompt the user for input file
+print("Image path: ",path.replace("/","\\"))  # for windows path
 
-exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=0.189, frame_time=0.1)
+exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=0.189, frame_time=0.1)  # create a Kymo object
 
 exp1.test_filter()  # open a window to test filter size
 exp1.test_threshold()  # open a window to test threshold
