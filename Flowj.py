@@ -5,8 +5,8 @@ import PySimpleGUI as sg
 # (pub data: Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\PIPELINE_TEST\\BioProtocol_CSFflowMeasurement\\TestFiles\\FlowData\\WT5_2_cropped.tif)
 path = sg.popup_get_file("", no_window=True, default_extension=".tif")
 print("Image path: ",path.replace("/","\\"))
-
-exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=0.189, frame_time=0.1)
+# pixel size: 0.16250000000000003 or 0.189 (pub)
+exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=0.16250000000000003, frame_time=0.291)
 
 #exp1.test_filter()
 #exp1.test_threshold()

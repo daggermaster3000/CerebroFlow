@@ -193,7 +193,7 @@ class Kymo:
 
         plt.show()
 
-    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None):
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0):
         
         print(f'Analyzing {self.name}:\n')
         print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}')
@@ -228,7 +228,7 @@ class Kymo:
         self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
 
         # show plot
-        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size) 
+        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice) 
 
         print("\033[0;37;92m",end="") 
         print("Done! ")
@@ -353,8 +353,8 @@ class Kymo:
                 # Plot grey bands for the standard error
                 ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
                 ax.legend()
-                fig.savefig(self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)++'.png')   # save the figure to file
-                plt.clear()
+                fig.savefig(self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
+                
                 plt.close(fig)    # close the figure window
 
             else:
