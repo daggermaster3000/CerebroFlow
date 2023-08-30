@@ -228,7 +228,7 @@ class Kymo:
 
         plt.show()
 
-    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0):
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None):
         """
         Performs CSF flow analysis on kymograph data.
 
@@ -287,7 +287,7 @@ class Kymo:
         self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
 
         # show plot
-        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice) 
+        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder) 
 
         print("\033[0;37;92m",end="") 
         print("Done! ")
@@ -295,7 +295,7 @@ class Kymo:
         
         return self.mean_velocities, self.se_velocities
     
-    def plot(self, save_profile: bool, save_display: bool, init_slice=0,filter_size=None):
+    def plot(self, save_profile: bool, save_display: bool, init_slice=0,filter_size=None, output_folder=None):
         """
         Sets up and displays a multi-panel figure to visualize CSF flow analysis results.
 
@@ -414,7 +414,10 @@ class Kymo:
             slice_slider.on_changed(update_slice)
                 
             if save_display:
-                fig.savefig(self.name.split(".")[0]+"_display_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png',dpi=fig.dpi)
+                if output_folder:
+                    fig.savefig(output_folder+"\\"+self.name.split(".")[0]+"_display_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png',dpi=fig.dpi)
+                else:
+                    fig.savefig(self.name.split(".")[0]+"_display_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png',dpi=fig.dpi)
                 plt.close(fig)
 
             if save_profile:
@@ -428,7 +431,10 @@ class Kymo:
                 # Plot grey bands for the standard error
                 ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
                 ax.legend()
-                fig.savefig(self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
+                if output_folder:
+                    fig.savefig(output_folder+"\\"+self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
+                else:
+                    fig.savefig(self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
                 
                 plt.close(fig)    # close the figure window
 

@@ -9,7 +9,7 @@ A tool to generate csf flow profiles based on a kymographic approach as well as 
 ## Requirements
 Run the following command in the console to install the requirements
 ```bash
-pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture
+pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture pandas
 ```
 
 ## Usage (for now)
