@@ -81,7 +81,7 @@ class GUI:
         self.window.close()
 
     def run_analysis(self):
-            output = {}     # dictionnary for output
+            output = {'name': [], 'group': [], 'means': []}     # dictionnary for output
             image_path = self.values["image_path"]
             output_folder = self.values["output_path"].replace("/","\\")
             pixel_size = float(self.values["pixel_size"])
@@ -108,7 +108,11 @@ class GUI:
                     exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
                     means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder)
                     total_means.append(means)
-                    output[exp.name] = [group_name, means]
+                    output["name"].append(exp.name)
+                    output["group"].append(group_name)
+                    output["means"].append(means[0])
+                    labels.append(exp.name)
+                    del exp
 
                 if total_profile:
                     # plot total profile (mean of means)
@@ -126,18 +130,21 @@ class GUI:
                     # Plot grey bands for the standard error
                     ax.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
                     ax.legend()
+
                     if output_folder:
-                        fig.savefig(output_folder+"\\"+group_name+"_total_vel_threshold"+str(np.round(exp.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
+                        fig.savefig(output_folder+"\\"+group_name+"_total_vel_threshold"+str(np.round(threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
                     else:
-                        fig.savefig(group_name+"_total_vel_threshold"+str(np.round(exp.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
+                        fig.savefig(group_name+"_total_vel_threshold"+str(np.round(threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
                     
                     plt.close(fig)    # close the figure window
 
                 if csv_table:
                     # save data as csv
-                    output = pd.DataFrame(output)
+                    
+                    df = pd.DataFrame(data=output)
+                    print(df)
                     csv_filename = f"{output_folder}\\{group_name}_csf_flow_results.csv"
-                    output.to_csv(csv_filename, index=False)
+                    df.to_csv(csv_filename, index=False)
 
                 self.analysis_running = False
                 sg.popup("Analysis Completed", title="CSF Flow Analysis")
