@@ -15,7 +15,8 @@ pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture 
 ## Usage 
 
 ### Using the GUI
-run `gui.py` and a simple GUI will appear.
+run `gui.py` and a simple GUI will appear. The dashboard isn't implemented yet, it will output individual flow profiles as well as the total flow profile of all the analyzed images and a csv file containing the data.
+</br>
 ![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/643069a2-90d4-4cd4-ad6a-23f89210e343)
 
 
