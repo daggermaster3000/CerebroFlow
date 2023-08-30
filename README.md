@@ -12,7 +12,12 @@ Run the following command in the console to install the requirements
 pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture pandas
 ```
 
-## Usage (for now)
+## Usage 
+
+### Using the GUI
+run `gui.py`
+
+### If you want to code
 Example code:
 ```python
 from funcs import kymo as ky
