@@ -17,6 +17,20 @@ import time
 import copy
 
 class Kymo:
+    """
+    Class Constructor: Kymo
+    -----------------------
+    Initializes the Kymo class object.
+
+    INPUTS:
+    - path (str): Path to the image file.
+    - pixel_size (float): Pixel size in micrometers.
+    - frame_time (float): Frame time in seconds.
+    - filter_size (tuple or None): Optional filter size for image filtering.
+
+    OUTPUTS:
+    - None
+    """
     def __init__(self,path, pixel_size, frame_time, filter_size=None):
         np.seterr(all="ignore")
         self.path = path
@@ -57,6 +71,17 @@ class Kymo:
             self.kymo = self.swap_axes(self.images)
         
     def test_filter(self):
+        """
+        Generates an interactive plot to test the Wiener filter effects on an image slice.
+
+        INPUTS:
+        -------
+        None
+
+        OUTPUTS:
+        --------
+        None
+        """
 
         # Define initial parameters
         thresh_init = 5
@@ -124,7 +149,17 @@ class Kymo:
 
         
     def test_threshold(self):
+        """
+        Generates an interactive plot to test thresholding and binarization effects on an image slice.
 
+        INPUTS:
+        -------
+        None
+
+        OUTPUTS:
+        --------
+        None
+        """
         # find the intensity of the central canal (based on the max of the mean intensities along the dv axis)
         means = []
         dv_length = len(self.kymo)
@@ -194,7 +229,31 @@ class Kymo:
         plt.show()
 
     def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0):
-        
+        """
+        Performs CSF flow analysis on kymograph data.
+
+        INPUTS:
+        -------
+        threshold: float
+            Threshold value for thresholding.
+        thresholding_method: str
+            Thresholding method ("Hardcore" or "Quantile").
+        save_profile: bool
+            Flag to save the flow profile figure.
+        save_display: bool
+            Flag to save the display figure.
+        filter_size: tuple or None
+            Optional filter size for image filtering.
+        init_slice: int
+            Initial d-v slice index.
+
+        OUTPUTS:
+        --------
+        mean_velocities: array
+            Array of mean velocities.
+        se_velocities: array
+            Array of standard errors of velocities.
+        """
         print(f'Analyzing {self.name}:\n')
         print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}')
 
@@ -237,8 +296,24 @@ class Kymo:
         return self.mean_velocities, self.se_velocities
     
     def plot(self, save_profile: bool, save_display: bool, init_slice=0,filter_size=None):
-        # plotting
-        # setup figure
+        """
+        Sets up and displays a multi-panel figure to visualize CSF flow analysis results.
+
+        INPUTS:
+        -------
+        save_profile: bool
+            Flag to save the flow profile figure.
+        save_display: bool
+            Flag to save the display figure.
+        init_slice: int
+            Initial d-v slice index.
+        filter_size: tuple or None
+            Optional filter size for image filtering.
+
+        OUTPUTS:
+        --------
+        None
+        """
     
         with plt.style.context('Solarize_Light2'):
             fig = plt.figure(layout="constrained", figsize=(10,6))
@@ -361,34 +436,68 @@ class Kymo:
                 plt.show()
 
     def filter_wiener(self,images: np.ndarray, filter_size: tuple):
-       """
-       Applies the wiener filter to the images array
-       
-       INPUTS:
-       ------
-        - images:ndarray
-       PARAMETERS:
-       ------
-        - filter_size:tuple       
-            size of the wiener filter
-       """
-       out = np.zeros_like(images)
-       for ind,im in enumerate(images):
+        """
+        Applies the Wiener filter to a sequence of images.
+
+        INPUTS:
+        -------
+        images: ndarray
+            Array of images to be filtered.
+        filter_size: tuple
+            Size of the Wiener filter.
+
+        OUTPUTS:
+        --------
+        filtered_images: ndarray
+            Filtered images after applying the Wiener filter.
+        """
+        out = np.zeros_like(images)
+        for ind,im in enumerate(images):
             print(f"Filtering image {np.round((ind+1)/self.N_images*100,1)}%",end = "\r")
             out[ind] = wiener(im,filter_size)
-       print()   
-       return out
+        print()   
+        return out
 
     def swap_axes(self,images):
-        # swap axes
-        #print("\nGenerating kymograph...")
+        """
+        Swaps the axes of a sequence of images to generate a kymograph.
+
+        INPUTS:
+        -------
+        images: ndarray
+            Array of images.
+
+        OUTPUTS:
+        --------
+        kymo: ndarray
+            Kymograph generated from the input images.
+        """
+
         kymo = np.swapaxes(images,0,1).copy()
         return kymo
 
     def thresholding(self,kymo: np.ndarray, method: str, threshold):  
+        """
+        Performs thresholding and rescaling on kymograph data.
 
-        # rescale the intensities
+        INPUTS:
+        -------
+        kymo: ndarray
+            Input kymograph data.
+        method: str
+            Thresholding method ("Hardcore" or "Quantile").
+        threshold: float
+            Threshold value for thresholding.
+
+        OUTPUTS:
+        --------
+        kymo: ndarray
+            Thresholded and normalized kymograph data.
+        """
+
+        
         if method == "Hardcore":
+            # rescale the intensities directly
             for i in range(len(kymo)):
                 kymo[i,:,:] = self.rescale(kymo[i,:,:],0,1)
                 print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
@@ -427,11 +536,38 @@ class Kymo:
             return kymo_avg.copy()
         
     def binary(self, kymo: np.ndarray):
+        """
+        Generates a binary image from thresholded kymograph data.
+
+        INPUTS:
+        -------
+        kymo: ndarray
+            Thresholded kymograph data.
+
+        OUTPUTS:
+        --------
+        binary: ndarray
+            Binary image generated from the thresholded kymograph.
+        """
+
         # Generate binary image, every pixel that is 1% above the min signal is set to 1
         binary = np.where(kymo > 1.01,1,0)
         return binary
 
     def get_velocities(self, binary_kymo: np.ndarray):
+        """
+        Detects and processes blobs in binary kymograph data to obtain velocities.
+
+        INPUTS:
+        -------
+        binary_kymo: ndarray
+            Binary kymograph data.
+
+        OUTPUTS:
+        --------
+        keepers_vel: list
+            List of velocities for each dorso-ventral position.
+        """
         # Find all the blobs
         self.labeled_img_array = []
         keepers_vel = []
@@ -468,6 +604,21 @@ class Kymo:
         return keepers_vel
     
     def get_mean_vel(self, velocities: np.ndarray):
+        """
+        Computes mean velocities and standard errors from a list of velocities.
+
+        INPUTS:
+        -------
+        velocities: list
+            List of velocities for each dorso-ventral position.
+
+        OUTPUTS:
+        --------
+        mean_velocities: array
+            Array of mean velocities.
+        se_velocities: array
+            Array of standard errors of velocities.
+        """
         # compute the mean velocities and se
         mean_velocities = savgol_filter([np.mean(i) for i in velocities],20,2) # compute the mean velocities for every dv position and smooth them
         se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,2) # compute the se for every dv position and smooth them
@@ -476,8 +627,18 @@ class Kymo:
     # helper functions
     def open_tiff(self):
         """
-        A function to open a .tif file
-        RETURNS: a capture object and a str of the name of the image
+        Opens a TIFF image file using the tiffcapture library.
+
+        INPUTS:
+        -------
+        None
+
+        OUTPUTS:
+        --------
+        tiff: tc.TiffCapture
+            TiffCapture object for the image file.
+        name: str
+            Name of the image file.
         """
         tiff = tc.opentiff(self.path) #open img
         name = self.path.split("\\")[-1]
@@ -491,6 +652,18 @@ class Kymo:
         np.save("cache\\"+self.name.split(".")[0],self.images)
 
     def init_bin(self):
+        """
+        init_bin
+        Initializes image data by processing time-lapse images or loading from cache if previously processed.
+
+        INPUTS:
+        -------
+        None
+
+        OUTPUTS:
+        --------
+        None
+        """
         # check the cache to see if we haven't already processed the image
         # create cache if non existent
         if "cache" not in os.listdir():
@@ -509,7 +682,21 @@ class Kymo:
 
     def rescale(self,array,min,max):
         """
-        A function that performs min-max scaling
+        Performs min-max scaling on the input array.
+
+        INPUTS:
+        -------
+        array: ndarray
+            Input array for scaling.
+        min: float
+            Minimum value after scaling.
+        max: float
+            Maximum value after scaling.
+
+        OUTPUTS:
+        --------
+        scaled_matrix: ndarray
+            Scaled array.
         """
         # Perform min-max scaling
         min_val = np.min(array)
