@@ -38,6 +38,23 @@ class GUI:
         self.window = sg.Window("CSF Flow Analysis GUI", self.layout, element_justification="center")
         self.analysis_running = False
 
+    def test_threshold(self):
+                    
+        pixel_size = float(self.values["pixel_size"])
+        frame_time = float(self.values["frame_time"])
+        path = sg.popup_get_file("", no_window=True, default_extension=".tif")
+        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+        exp.test_threshold()
+
+    def test_filter(self):
+                    
+        pixel_size = float(self.values["pixel_size"])
+        frame_time = float(self.values["frame_time"])
+        path = sg.popup_get_file("", no_window=True, default_extension=".tif")
+        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+        exp.test_filter()
+
+
     def start(self):
         # Event loop
         while True:
@@ -53,7 +70,12 @@ class GUI:
                     self.analysis_running = True
                     analysis_thread = threading.Thread(target=self.run_analysis)
                     analysis_thread.start()
-                
+
+            elif self.event == "Test threshold":
+                self.test_threshold()
+
+            elif self.event == "Test filter":
+                self.test_filter()
 
         # Close the window
         self.window.close()
