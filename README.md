@@ -15,7 +15,9 @@ pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture 
 ## Usage 
 
 ### Using the GUI
-run `gui.py`
+run `gui.py` and a simple GUI will appear.
+![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/643069a2-90d4-4cd4-ad6a-23f89210e343)
+
 
 ### If you want to code
 Example code:
