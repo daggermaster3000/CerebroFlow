@@ -12,11 +12,11 @@ import time
 
 class GUI:
     def __init__(self):
-        sg.theme("Reddit")
+        sg.theme("SandyBeach")
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
-            [sg.Text("CSF Flow Analysis", font=("Helvetica", 20))],
+            [sg.Text("CSF Flow Analysis 🐟", font=("Helvetica", 20))],
             [sg.Column([
             [sg.Text("Input(s):         "), sg.InputText(key="image_path"), sg.FilesBrowse()],
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
@@ -195,6 +195,7 @@ class GUI:
                 stop_console.set()
                 sys.stdout = sys.__stdout__
                 sg.popup("Analysis Completed", title="CSF Flow Analysis")
+                self.window["progressbar"].update(0)
 
 
 
