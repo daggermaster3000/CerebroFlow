@@ -426,6 +426,7 @@ class Kymo:
                 plt.style.use('Solarize_Light2')
                 ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
+                ax.set_title(str(self.name))
                 dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
                 ax.plot(dv_axis,self.mean_velocities) 
                 # Plot grey bands for the standard error

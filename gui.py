@@ -8,10 +8,13 @@ import threading
 import sys
 from io import StringIO
 import time
-
+import warnings
+import shutil 
 
 class GUI:
     def __init__(self):
+        warnings.filterwarnings("ignore", category=UserWarning)
+
         sg.theme("SandyBeach")
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
@@ -45,7 +48,7 @@ class GUI:
             ], element_justification='left')],
             [sg.Column([
             [sg.Button("Test threshold"), sg.Button("Test filter")],
-            [sg.Button("Run Analysis"), sg.Button("Exit")],
+            [sg.Button("Run Analysis"), sg.Button("Exit"), sg.Button("Clear cache")],
             [sg.HorizontalSeparator()],
             [sg.Text("Progress:"),
             sg.ProgressBar(100, orientation="h", size=(50, 20), key="progressbar")],  
@@ -55,7 +58,7 @@ class GUI:
         ]
      
         # Create a buffer to capture console output
-        self.output_buffer = StringIO()
+        self.output_buffer = StringIO(newline="\n")
 
         # Redirect standard output to the buffer
         sys.stdout = self.output_buffer
@@ -64,21 +67,7 @@ class GUI:
         self.window = sg.Window("CSF Flow Analysis GUI", self.layout, element_justification="center")
         self.analysis_running = False
 
-    def test_threshold(self):
-                    
-        pixel_size = float(self.values["pixel_size"])
-        frame_time = float(self.values["frame_time"])
-        path = sg.popup_get_file("", no_window=True, default_extension=".tif")
-        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
-        exp.test_threshold()
-
-    def test_filter(self):
-                    
-        pixel_size = float(self.values["pixel_size"])
-        frame_time = float(self.values["frame_time"])
-        path = sg.popup_get_file("", no_window=True, default_extension=".tif")
-        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
-        exp.test_filter()
+    
 
 
     def start(self):
@@ -106,8 +95,11 @@ class GUI:
 
             elif self.event == "Test filter":
                 self.test_filter()
+            
+            elif self.event == "Clear cache":
+                # clear the cache if you modified (ex:rotation) any input images
+                shutil.rmtree("cache")
 
-       
     
     def get_console_output(self,stop_console):
 
@@ -160,15 +152,27 @@ class GUI:
                     self.window["progressbar"].update((ind+1)/len(paths)*100)
 
                 if total_profile:
+
                     # plot total profile (mean of means)
-                    
+                    # make all the arrays start at the same location
+                    for ind,array in enumerate(total_means):
+                        total_means[ind] = array[np.nonzero(array)[0]]
+
+                    # pad the arrays if not same size
+                    # Find the maximum length of all arrays
+                    max_length = max(len(arr) for arr in total_means)
+
+                    # Pad each array to match the maximum length
+                    total_means = [np.pad(arr, (5, max_length - len(arr)+5), mode='constant', constant_values=0) for arr in total_means]
+
+                    # get mean velocities and se
                     mean_velocities = savgol_filter(np.mean(total_means, axis=0),5,2) # compute the mean velocities for every dv position and smooth them
                     se_velocities = savgol_filter(np.std(total_means,axis=0) / np.sqrt(len(total_means)),5,2) # compute the se for every dv position and smooth them
                     
                     fig, ax = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
                     plt.style.use('Solarize_Light2')
                     ax.set_title(group_name+" CSF profile")
-                    ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
+                    ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
                     ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                     dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
                     ax.plot(dv_axis,mean_velocities) 
@@ -194,9 +198,24 @@ class GUI:
                 self.analysis_running = False
                 stop_console.set()
                 sys.stdout = sys.__stdout__
-                sg.popup("Analysis Completed", title="CSF Flow Analysis")
                 self.window["progressbar"].update(0)
 
+
+    def test_threshold(self):
+                    
+        pixel_size = float(self.values["pixel_size"])
+        frame_time = float(self.values["frame_time"])
+        path = sg.popup_get_file("", no_window=True, default_extension=".tif")
+        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+        exp.test_threshold()
+
+    def test_filter(self):
+                    
+        pixel_size = float(self.values["pixel_size"])
+        frame_time = float(self.values["frame_time"])
+        path = sg.popup_get_file("", no_window=True, default_extension=".tif")
+        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+        exp.test_filter()
 
 
 Gui = GUI()
