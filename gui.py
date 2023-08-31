@@ -5,23 +5,32 @@ from scipy.signal import savgol_filter
 import numpy as np
 import matplotlib.pyplot as plt
 import threading
+import sys
+from io import StringIO
+import time
 
 
 class GUI:
     def __init__(self):
+        sg.theme("Reddit")
         # Define the layout of the GUI
+        self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
             [sg.Text("CSF Flow Analysis", font=("Helvetica", 20))],
-            [sg.Text("File Path:"), sg.InputText(key="image_path"), sg.FilesBrowse()],
-            [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
             [sg.Column([
+            [sg.Text("Input(s):         "), sg.InputText(key="image_path"), sg.FilesBrowse()],
+            [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
+            [sg.TabGroup([
+            [sg.Tab("Settings",layout=[
             [sg.Text("Pixel Size (um):"), sg.InputText(key="pixel_size", size=(6,2), default_text = 0.189)],
             [sg.Text("Frame Time (s):"), sg.InputText(key="frame_time", size=(6,2), default_text = 0.1)],
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
             [sg.Text("Thresholding Method:")],
             [sg.Radio("Hardcore", "thresholding", key="method_hardcore"),
-            sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)],
+            sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)]]
+            )],
+            [sg.Tab("Output",layout=[
             [sg.Text("Naming Method:")],
             [sg.Radio("Filename", "naming_method", key="Filename")],
             [sg.Radio("Custom", "naming_method", key="Custom", default=True),
@@ -30,10 +39,27 @@ class GUI:
             [sg.Checkbox("Individual flow profiles", key="individual_profiles", default=True)],
             [sg.Checkbox("Total flow profile", key="total_profile", default=True)],
             [sg.Checkbox("CSV Data Table", key="csv_table", default=True)],
+            ]
+            )],
+            ])]
+            ], element_justification='left')],
+            [sg.Column([
             [sg.Button("Test threshold"), sg.Button("Test filter")],
             [sg.Button("Run Analysis"), sg.Button("Exit")],
+            [sg.HorizontalSeparator()],
+            [sg.Text("Progress:"),
+            sg.ProgressBar(100, orientation="h", size=(50, 20), key="progressbar")],  
+            [sg.Text("Log:")],  
+            [self.output_element]
             ], element_justification='left')],
         ]
+     
+        # Create a buffer to capture console output
+        self.output_buffer = StringIO()
+
+        # Redirect standard output to the buffer
+        sys.stdout = self.output_buffer
+
         # Create the window
         self.window = sg.Window("CSF Flow Analysis GUI", self.layout, element_justification="center")
         self.analysis_running = False
@@ -56,14 +82,18 @@ class GUI:
 
 
     def start(self):
+        
         # Event loop
         while True:
             self.event, self.values = self.window.read()
 
             if self.event == sg.WIN_CLOSED or self.event == "Exit":
+                # Close the window
+                self.window.close()
                 break
-            
+
             elif self.event == "Run Analysis":
+
                 if self.analysis_running:
                     sg.popup("Analysis in progress please wait...", title="CSF Flow Analysis")
                 else:
@@ -77,10 +107,24 @@ class GUI:
             elif self.event == "Test filter":
                 self.test_filter()
 
-        # Close the window
-        self.window.close()
+       
+    
+    def get_console_output(self,stop_console):
+
+        while not stop_console.is_set():
+            # Update the output element with captured console output
+            self.output_element.update(self.output_buffer.getvalue())
+            time.sleep(0.2)
+
+        
+        
 
     def run_analysis(self):
+            
+            stop_console = threading.Event()
+            self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
+            self.console_thread.start()
+
             output = {'name': [], 'group': [], 'means': []}     # dictionnary for output
             image_path = self.values["image_path"]
             output_folder = self.values["output_path"].replace("/","\\")
@@ -104,7 +148,7 @@ class GUI:
             if self.values["Filename"]:
                 print("args from filename not yet supported!")
             else:
-                for path in paths:
+                for ind, path in enumerate(paths):
                     exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
                     means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder)
                     total_means.append(means)
@@ -113,6 +157,7 @@ class GUI:
                     output["means"].append(means[0])
                     labels.append(exp.name)
                     del exp
+                    self.window["progressbar"].update((ind+1)/len(paths)*100)
 
                 if total_profile:
                     # plot total profile (mean of means)
@@ -140,13 +185,15 @@ class GUI:
 
                 if csv_table:
                     # save data as csv
-                    
+                    print("Saving csv")
                     df = pd.DataFrame(data=output)
                     print(df)
                     csv_filename = f"{output_folder}\\{group_name}_csf_flow_results.csv"
                     df.to_csv(csv_filename, index=False)
 
                 self.analysis_running = False
+                stop_console.set()
+                sys.stdout = sys.__stdout__
                 sg.popup("Analysis Completed", title="CSF Flow Analysis")
 
 
