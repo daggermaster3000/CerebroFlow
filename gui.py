@@ -10,6 +10,8 @@ from io import StringIO
 import time
 import warnings
 import shutil 
+import subprocess
+
 
 class GUI:
     def __init__(self):
@@ -195,10 +197,12 @@ class GUI:
                     csv_filename = f"{output_folder}\\{group_name}_csf_flow_results.csv"
                     df.to_csv(csv_filename, index=False)
 
+                subprocess.Popen(f'explorer "{output_folder}"')
                 self.analysis_running = False
                 stop_console.set()
                 sys.stdout = sys.__stdout__
                 self.window["progressbar"].update(0)
+                
 
 
     def test_threshold(self):
