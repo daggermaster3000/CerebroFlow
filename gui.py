@@ -17,7 +17,7 @@ class GUI:
     def __init__(self):
         warnings.filterwarnings("ignore", category=UserWarning)
 
-        sg.theme("SandyBeach")
+        sg.theme("Default1")
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
