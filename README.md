@@ -1,4 +1,4 @@
-# CerebroFlow 🧠 🐟
+# CerebroFlow
 A tool to generate csf flow profiles based on a kymographic approach as well as other utilities 
 </br>
 
