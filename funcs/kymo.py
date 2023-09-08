@@ -442,6 +442,8 @@ class Kymo:
             else:
                 plt.show()
 
+            del fig
+
     def filter_wiener(self,images: np.ndarray, filter_size: tuple):
         """
         Applies the Wiener filter to a sequence of images.
@@ -587,7 +589,7 @@ class Kymo:
             # detect blobs
             print(f"Detecting and processing blobs for d-v positions: {np.round(i/(self.dv_pos-self.N_avg)*100)}%",end = "\r")
             _, labeled_img, stats, centroids = cv2.connectedComponentsWithStats(binary_kymo[i].astype(np.uint8), connectivity=8)
-            # labeled_img = label(binary[i],background=0)
+            # labeled_img = label(binary_kymo[i],background=0)
             self.labeled_img_array.append(labeled_img)
             
             # iterate over every blob
@@ -595,8 +597,8 @@ class Kymo:
             # take regions with large enough areas good eccentricity and orientation
                 if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1):
                     # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
-                    # note: no need to convert to rad as np takes rad directly and regionprops returns an angle in rad
-                    speed = (np.arctan(-region.orientation))*(self.pixel_size/self.frame_time)   # maybe un blem with the units
+                    # note: no need to convert to rad as np takes rad directly and regionprops returns the orientation angle in rad
+                    speed = (np.arctan(-region.orientation))*(self.pixel_size/self.frame_time)  # maybe un blem with the units
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
                     rects.append(mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -627,8 +629,8 @@ class Kymo:
             Array of standard errors of velocities.
         """
         # compute the mean velocities and se
-        mean_velocities = savgol_filter([np.mean(i) for i in velocities],20,2) # compute the mean velocities for every dv position and smooth them
-        se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,2) # compute the se for every dv position and smooth them
+        mean_velocities = savgol_filter([np.average(i) for i in velocities],20,3) # compute the mean velocities for every dv position and smooth them
+        se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,3) # compute the se for every dv position and smooth them
         return mean_velocities, se_velocities
 
     # helper functions

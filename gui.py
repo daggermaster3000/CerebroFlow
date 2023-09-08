@@ -27,8 +27,8 @@ class GUI:
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
             [sg.TabGroup([
             [sg.Tab("Settings",layout=[
-            [sg.Text("Pixel Size (um):"), sg.InputText(key="pixel_size", size=(6,2), default_text = 0.189)],
-            [sg.Text("Frame Time (s):"), sg.InputText(key="frame_time", size=(6,2), default_text = 0.1)],
+            [sg.Text("Pixel Size (um):"), sg.Combo([0.189,0.21666666666666673],key="pixel_size", size=(6,2), default_value = 0.189)],
+            [sg.Text("Frame Time (s):"), sg.Combo([0.291,0.1],key="frame_time", size=(6,2), default_value = 0.1)],
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
             [sg.Text("Thresholding Method:")],
@@ -50,7 +50,7 @@ class GUI:
             ], element_justification='left')],
             [sg.Column([
             [sg.Button("Test threshold"), sg.Button("Test filter")],
-            [sg.Button("Run Analysis"), sg.Button("Exit"), sg.Button("Clear cache")],
+            [sg.Button("Run Analysis"), sg.Button("Exit"), sg.Button("Clear cache"),sg.Button("Test"),sg.Button("Threads")],
             [sg.HorizontalSeparator()],
             [sg.Text("Progress:"),
             sg.ProgressBar(100, orientation="h", size=(50, 20), key="progressbar")],  
@@ -59,17 +59,13 @@ class GUI:
             ], element_justification='left')],
         ]
      
-        # Create a buffer to capture console output
-        self.output_buffer = StringIO(newline="\n")
 
-        # Redirect standard output to the buffer
-        sys.stdout = self.output_buffer
 
         # Create the window
         self.window = sg.Window("CSF Flow Analysis GUI", self.layout, element_justification="center")
         self.analysis_running = False
 
-    
+        
 
 
     def start(self):
@@ -77,10 +73,13 @@ class GUI:
         # Event loop
         while True:
             self.event, self.values = self.window.read()
+            self.done_test = threading.Event()
+
 
             if self.event == sg.WIN_CLOSED or self.event == "Exit":
                 # Close the window
                 self.window.close()
+               
                 break
 
             elif self.event == "Run Analysis":
@@ -89,8 +88,9 @@ class GUI:
                     sg.popup("Analysis in progress please wait...", title="CSF Flow Analysis")
                 else:
                     self.analysis_running = True
-                    analysis_thread = threading.Thread(target=self.run_analysis)
-                    analysis_thread.start()
+                    self.analysis_thread = threading.Thread(target=self.run_analysis)
+                    self.analysis_thread.start()
+                    
 
             elif self.event == "Test threshold":
                 self.test_threshold()
@@ -101,17 +101,76 @@ class GUI:
             elif self.event == "Clear cache":
                 # clear the cache if you modified (ex:rotation) any input images
                 shutil.rmtree("cache")
-
+            
+            elif self.event == "Test":
+                self.test_thread = threading.Thread(target=self.test)
+                self.test_thread.start()
+            
+                
+            elif self.event == "Threads":
+                print(self.done_test.is_set())
+                 # get a list of all active threads
+                threads = threading.enumerate()
+                # report the name of all active threads
+                for thread in threads:
+                    print(thread.name)
+                
     
     def get_console_output(self,stop_console):
+        # Create a buffer to capture console output
+        self.output_buffer = StringIO(newline="\n")
+
+        # Redirect standard output to the buffer
+        sys.stdout = self.output_buffer
 
         while not stop_console.is_set():
             # Update the output element with captured console output
             self.output_element.update(self.output_buffer.getvalue())
             time.sleep(0.2)
+        sys.stdout = sys.__stdout__
+    
+        
+    def test(self):
+       
+            stop_console = threading.Event()
+            self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
+            self.console_thread.start()
+
+            image_path = self.values["image_path"]
+            output_folder = self.values["output_path"].replace("/","\\")
+            pixel_size = float(self.values["pixel_size"])
+            frame_time = float(self.values["frame_time"])
+            filter_size = int(self.values["filter_size"]) if self.values["filter_size"] else None
+            threshold = float(self.values["threshold"])
+            group_name = self.values["group_name"] if self.values["Custom"] else None
+
+            if self.values["method_hardcore"]:
+                thresholding_method = "Hardcore"
+            else:
+                thresholding_method = "Quantile"
+
+            ind_profile = self.values["individual_profiles"]
+            total_profile = self.values["total_profile"]
+            csv_table = self.values["csv_table"]
+            paths = self.values["image_path"].split(";")
+            total_means = []
+            labels = []
+            for ind, path in enumerate(paths):
+                exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+                exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, filter_size=filter_size, output_folder=output_folder)
+            del exp
+            # terminate threads
+            stop_console.set()
+            #self.console_thread.join()
+            del self.console_thread
+
+            stop_console.clear()
+
 
         
-        
+            
+
+            
 
     def run_analysis(self):
             
@@ -224,11 +283,14 @@ class GUI:
                     plt.close(fig2)    # close the figure window
                     """
 
-
+                # show where the results are outputted
                 subprocess.Popen(f'explorer "{output_folder}"')
+
                 self.analysis_running = False
                 stop_console.set()
-                sys.stdout = sys.__stdout__
+                self.console_thread.join()
+                del self.console_thread
+                stop_console.clear()
                 self.window["progressbar"].update(0)
                 
 
