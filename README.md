@@ -1,4 +1,4 @@
-# CerebroFlow 🧠 🐟
+# CerebroFlow
 A tool to generate csf flow profiles based on a kymographic approach as well as other utilities 
 </br>
 
@@ -18,7 +18,8 @@ pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture 
 run `gui.py` and a simple GUI will appear. The dashboard isn't implemented yet, it will output individual flow profiles as well as the mean flow profile of all the analyzed images and a csv file containing the data.
 </br>
 </br>
-![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/d7913ec3-b90a-46c8-a46e-3151d205a096)
+![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/35a4a91d-c408-4b9b-987a-96aeb4b81472)
+
 
 
 
