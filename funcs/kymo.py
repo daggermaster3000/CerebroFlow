@@ -285,7 +285,7 @@ class Kymo:
 
         # process the mean and sd of all the velocities
         self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
-
+        print(f"Detected {len(self.mean_velocities)} traces.")
         # show plot
         self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder) 
 
@@ -358,16 +358,19 @@ class Kymo:
                     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                             fill=False, edgecolor='red', linewidth=1)
                     plot3.add_patch(rect)
-
+            #print(self.mean_velocities)
             # generate the x-axis in um
-            dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
+            try:
+                dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
             
-            # plot the velocities
-            plot1.plot(dv_axis,self.mean_velocities) 
-            
-            # Plot grey bands for the standard error
-            plot1.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
-            
+                # plot the velocities
+                plot1.plot(dv_axis,self.mean_velocities) 
+                
+                # Plot grey bands for the standard error
+                plot1.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
+            except:
+                print("Problem with velocity detection")
+                pass
             # interactivity
             axtime = fig.add_axes([0.08, 0.35, 0.2, 0.03])
             time_slider = Slider(
@@ -427,11 +430,14 @@ class Kymo:
                 ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                 ax.set_title(str(self.name))
-                dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
-                ax.plot(dv_axis,self.mean_velocities) 
-                # Plot grey bands for the standard error
-                ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
-                ax.legend()
+                try:
+                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
+                    ax.plot(dv_axis,self.mean_velocities) 
+                    # Plot grey bands for the standard error
+                    ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
+                    ax.legend()
+                except:
+                    print("Error")
                 if output_folder:
                     fig.savefig(output_folder+"\\"+self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
                 else:
@@ -595,10 +601,10 @@ class Kymo:
             # iterate over every blob
             for region in regionprops(labeled_img):
             # take regions with large enough areas good eccentricity and orientation
-                if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1):
+                if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1) and (region.area <= 150):
                     # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
                     # note: no need to convert to rad as np takes rad directly and regionprops returns the orientation angle in rad
-                    speed = (np.arctan(-region.orientation))*(self.pixel_size/self.frame_time)  # maybe un blem with the units
+                    speed = (np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  # maybe un blem with the units
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
                     rects.append(mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,

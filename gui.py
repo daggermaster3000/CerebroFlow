@@ -27,7 +27,7 @@ class GUI:
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
             [sg.TabGroup([
             [sg.Tab("Settings",layout=[
-            [sg.Text("Pixel Size (um):"), sg.Combo([0.189,0.21666666666666673],key="pixel_size", size=(6,2), default_value = 0.189)],
+            [sg.Text("Pixel Size (um):"), sg.Combo([0.189,0.21666666666666673,0.16250000000000003],key="pixel_size", size=(6,2), default_value = 0.189)],
             [sg.Text("Frame Time (s):"), sg.Combo([0.291,0.1],key="frame_time", size=(6,2), default_value = 0.1)],
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
