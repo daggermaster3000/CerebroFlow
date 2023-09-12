@@ -1,37 +1,45 @@
-import PySimpleGUI as sg
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
-# Define layouts for the different tabs
-layout_tab1 = [
-    [sg.Text("Content of Tab 1")],
-    [sg.Button("Button 1")]
-]
+from skimage.draw import ellipse
+from skimage.measure import label, regionprops, regionprops_table
+from skimage.transform import rotate
 
-layout_tab2 = [
-    [sg.Text("Content of Tab 2")],
-    [sg.Button("Button 2")]
-]
 
-layout_tab3 = [
-    [sg.Text("Content of Tab 3")],
-    [sg.Button("Button 3")]
-]
+image = np.zeros((600, 600))
 
-# Create a tab group with the defined layouts
-tab_group_layout = [
-    [sg.TabGroup([
-        [sg.Tab("Tab 1", layout_tab1)],
-        [sg.Tab("Tab 2", layout_tab2)],
-        [sg.Tab("Tab 3", layout_tab3)]
-    ])],
-    [sg.Button("Exit")]
-]
+rr, cc = ellipse(300, 350, 100, 220)
+image[rr, cc] = 1
 
-window = sg.Window("Tabs Example", tab_group_layout)
+image = rotate(image, angle=15, order=0)
 
-while True:
-    event, values = window.read()
+rr, cc = ellipse(100, 100, 60, 50)
+image[rr, cc] = 1
 
-    if event == sg.WIN_CLOSED or event == "Exit":
-        break
+label_img = label(image)
+regions = regionprops(label_img)
+fig, ax = plt.subplots()
+ax.imshow(image, cmap=plt.cm.gray)
 
-window.close()
+for props in regions[1:]:
+    y0, x0 = props.centroid
+    orientation = props.orientation
+    print(np.degrees(orientation))
+    x1 = x0 + math.cos(orientation) * 0.5 * props.axis_minor_length
+    y1 = y0 - math.sin(orientation) * 0.5 * props.axis_minor_length
+    x2 = x0 - math.sin(orientation) * 0.5 * props.axis_major_length
+    y2 = y0 - math.cos(orientation) * 0.5 * props.axis_major_length
+
+    ax.plot((x0, x1), (y0, y1), '-r', linewidth=2.5)
+    ax.plot((x0, x2), (y0, y2), '-r', linewidth=2.5)
+    ax.plot(x0, y0, '.g', markersize=15)
+
+    minr, minc, maxr, maxc = props.bbox
+    bx = (minc, maxc, maxc, minc, minc)
+    by = (minr, minr, maxr, maxr, minr)
+    ax.plot(bx, by, '-b', linewidth=2.5)
+
+ax.axis((0, 600, 600, 0))
+plt.show()
