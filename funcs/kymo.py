@@ -12,9 +12,8 @@ import os
 from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
-from matplotlib.widgets import Slider, Button, TextBox
-import time
-import copy
+from matplotlib.widgets import Slider
+
 
 class Kymo:
     """

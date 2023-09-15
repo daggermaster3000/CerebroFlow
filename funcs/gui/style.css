@@ -1,0 +1,72 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+    display: block;
+    text-align: center;
+}
+#title_img{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 50px;
+}
+form {
+    width: 80%;
+    margin: 20px auto;
+}
+
+label {
+    
+    margin: 5px 0;
+}
+
+input[type="text"],
+input[type="file"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+button {
+    display: inline-block;
+    background-color: #838181;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #444;  
+}
+
+button:active {
+    background-color: rgb(1, 255, 170);  
+}
+
+#settingsTab,
+#outputTab {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+progress {
+    width: 100%;
+}
