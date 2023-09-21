@@ -227,7 +227,7 @@ class Kymo:
 
         plt.show()
 
-    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None):
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=True):
         """
         Performs CSF flow analysis on kymograph data.
 
@@ -286,7 +286,8 @@ class Kymo:
         self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
         print(f"Detected {len(self.mean_velocities)} traces.")
         # show plot
-        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder) 
+        if dash:
+            self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder) 
 
         print("\033[0;37;92m",end="") 
         print("Done! ")

@@ -17,7 +17,7 @@ max_vels = [np.max(vels) for vels in exp1.velocities]
 min_vels = [np.min(vels) for vels in exp1.velocities]
 dv_axis = np.arange(-(len(max_vels)-(len(max_vels)-np.nonzero(max_vels)[0][0])),len(max_vels)-np.nonzero(max_vels)[0][0])*pixel_size # find start of canal based on first non zero speed
 
-for x,y in zip(dv_axis[130:-100], exp1.velocities[130:-100]):
+for x,y in zip(dv_axis, exp1.velocities):
     try:
         length = len(y)
     except:
@@ -35,7 +35,7 @@ plt.legend(handles=[dots, crosses])
 plt.xlabel("Absolute d-v position (um)")
 plt.ylabel("velocity (um/s)")
 
-plt.title("Velocity scatter plot")
+plt.suptitle("Velocity scatter plot")
 plt.show()
 #exp1.test_filter()
 #exp1.test_threshold()
