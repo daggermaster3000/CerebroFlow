@@ -12,12 +12,10 @@
     <h1>CSF Flow Analysis</h1>
     
     <form id="analysisForm">
-        <label for="image_path">Input(s):</label>
-        <input type="file" id="image_path" name="image_path" multiple>
-        <button type="button" id="test_dashboard" onclick="getPaths();">Chose files</button>
-        <br>
-        <label for="output_path">Output Folder:</label>
-        <input type="file" id="output_path" name="output_path" webkitdirectory directory><br>
+        <button type="button" id="inputpaths" onclick="getPaths();">Chose files</button>
+        <div id="file-div"></div>
+        <button type="button" id="outputpath" onclick="getOutputFolder();">Chose Output Folder</button>
+        <div id="folder-div"></div>
 
         <!-- Settings Tab -->
         <div id="settingsTab">

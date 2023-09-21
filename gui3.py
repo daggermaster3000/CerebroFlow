@@ -86,7 +86,14 @@ def get_console_output(self,stop_console):
 def select_input():
     paths = sg.popup_get_file("", no_window=True, default_extension=".tif", multiple_files=True)
     print(paths)
+    paths = [path+"<br>" for path in paths] # FOR DISPLAY IN HTML
     return paths
+
+@eel.expose 
+def select_output():
+    path = sg.popup_get_folder("", no_window=True)
+    print(path)
+    return path
 
 @eel.expose 
 def test(image_path,output_folder,pixel_size,frame_time,filter_size,threshold,ind_profile,total_profile,csv_table):

@@ -70,3 +70,8 @@ button:active {
 progress {
     width: 100%;
 }
+
+#file-div
+{
+   overflow:auto;
+}
