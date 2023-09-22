@@ -178,7 +178,7 @@ class GUI:
             self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
             self.console_thread.start()
 
-            output = {'name': [], 'group': [], 'means': []}     # dictionnary for output
+            output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionnary for output
             image_path = self.values["image_path"]
             output_folder = self.values["output_path"].replace("/","\\")
             pixel_size = float(self.values["pixel_size"])
@@ -207,7 +207,9 @@ class GUI:
                     total_means.append(means)
                     output["name"].append(exp.name)
                     output["group"].append(group_name)
-                    output["means"].append(means[0])
+                    output["means"].append(means.tolist())
+                    output["extremum"].append(np.max(means))
+                    output["minimum"].append(np.min(means))
                     labels.append(exp.name)
                     del exp
                     self.window["progressbar"].update((ind+1)/len(paths)*100)
