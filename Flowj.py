@@ -12,32 +12,6 @@ print("Image path: ",path.replace("/","\\"))
 # pixel size: 0.16250000000000003 or 0.189 (pub)
 pixel_size = 0.189
 exp1 = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=0.1)
-exp1.generate_kymo(threshold=0.5,dash=False)
-max_vels = [np.max(vels) for vels in exp1.velocities]
-min_vels = [np.min(vels) for vels in exp1.velocities]
-dv_axis = np.arange(-(len(max_vels)-(len(max_vels)-np.nonzero(max_vels)[0][0])),len(max_vels)-np.nonzero(max_vels)[0][0])*pixel_size # find start of canal based on first non zero speed
-
-for x,y in zip(dv_axis[130:-100], exp1.velocities[130:-100]):
-    try:
-        length = len(y)
-    except:
-        length = 1
-    plt.scatter([x]*length,y,alpha=0.5,label="velocities", marker = "o",linestyle='None')
-    plt.scatter([x],np.mean(y),marker="x",color="black",label="mean velocity",linestyle='None')
-
-# Create legend handles manually
-dots = mlines.Line2D([], [], color='black', marker='o', linestyle='None', markersize=5, label='Measured velocity',alpha=0.5)
-crosses = mlines.Line2D([], [], color='black', marker='x', linestyle='None', markersize=5, label='Mean velocity')
-
-# Add the legend to the plot
-plt.legend(handles=[dots, crosses])
-
-plt.xlabel("Absolute d-v position (um)")
-plt.ylabel("velocity (um/s)")
-
-plt.title("Velocity scatter plot")
-plt.show()
-#exp1.test_filter()
-#exp1.test_threshold()
-
+exp1.generate_kymo(threshold=0.5,dash=True)
+plt.imsave("raw_kymo_test2.png",exp1.raw_kymo[200],)
 
