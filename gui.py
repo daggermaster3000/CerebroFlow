@@ -11,6 +11,7 @@ import time
 import warnings
 import shutil 
 import subprocess
+import os
 
 
 class GUI:
@@ -27,10 +28,11 @@ class GUI:
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
             [sg.TabGroup([
             [sg.Tab("Settings",layout=[
-            [sg.Text("Pixel Size (um):"), sg.Combo([0.189,0.21666666666666673,0.16250000000000003],key="pixel_size", size=(6,2), default_value = 0.189)],
-            [sg.Text("Frame Time (s):"), sg.Combo([0.291,0.1],key="frame_time", size=(6,2), default_value = 0.1)],
+            [sg.Text("Pixel Size (um):"), sg.Combo([0.189,0.21666666666666673,0.16250000000000003],key="pixel_size", size=(6,2), default_value = 0.16250000000000003)],
+            [sg.Text("Frame Time (s):"), sg.Combo([0.291,0.1],key="frame_time", size=(6,2), default_value = 0.159)],
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
+            [sg.Text("Smoothing window:"), sg.InputText(key="smoothwindow", size=(6,2), default_text = 20),sg.Text("Smoothing polyorder:"), sg.InputText(key="smoothpoly", size=(6,2), default_text = 3)],
             [sg.Text("Thresholding Method:")],
             [sg.Radio("Hardcore", "thresholding", key="method_hardcore"),
             sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)]]
@@ -43,6 +45,7 @@ class GUI:
             [sg.Text("Outputs:")],
             [sg.Checkbox("Individual flow profiles", key="individual_profiles", default=True)],
             [sg.Checkbox("Total flow profile", key="total_profile", default=True)],
+            [sg.Checkbox("Profile overlay", key="profile_overlay", default=True)],
             [sg.Checkbox("CSV Data Table", key="csv_table", default=True)],
             ]
             )],
@@ -148,16 +151,10 @@ class GUI:
                 thresholding_method = "Hardcore"
             else:
                 thresholding_method = "Quantile"
-
-            ind_profile = self.values["individual_profiles"]
-            total_profile = self.values["total_profile"]
-            csv_table = self.values["csv_table"]
             paths = self.values["image_path"].split(";")
-            total_means = []
-            labels = []
             for ind, path in enumerate(paths):
                 exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
-                exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, filter_size=filter_size, output_folder=output_folder)
+                exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, filter_size=filter_size, output_folder=output_folder,dash=True)
             del exp
             # terminate threads
             stop_console.set()
@@ -167,16 +164,11 @@ class GUI:
             stop_console.clear()
 
 
-        
-            
-
-            
-
     def run_analysis(self):
             
-            stop_console = threading.Event()
-            self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
-            self.console_thread.start()
+            #stop_console = threading.Event()
+            #self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
+            #self.console_thread.start()
 
             output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionnary for output
             image_path = self.values["image_path"]
@@ -186,6 +178,7 @@ class GUI:
             filter_size = int(self.values["filter_size"]) if self.values["filter_size"] else None
             threshold = float(self.values["threshold"])
             group_name = self.values["group_name"] if self.values["Custom"] else None
+            gol_parms = (int(self.values["smoothwindow"]),int(self.values["smoothpoly"]))
 
             if self.values["method_hardcore"]:
                 thresholding_method = "Hardcore"
@@ -194,6 +187,7 @@ class GUI:
 
             ind_profile = self.values["individual_profiles"]
             total_profile = self.values["total_profile"]
+            profile_overlay = self.values["profile_overlay"]
             csv_table = self.values["csv_table"]
             paths = self.values["image_path"].split(";")
             total_means = []
@@ -203,9 +197,9 @@ class GUI:
             else:
                 for ind, path in enumerate(paths):
                     exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
-                    means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder)
+                    means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
                     total_means.append(means)
-                    output["name"].append(exp.name)
+                    output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))
                     output["group"].append(group_name)
                     output["means"].append(means.tolist())
                     output["extremum"].append(np.max(means))
@@ -215,14 +209,26 @@ class GUI:
                     self.window["progressbar"].update((ind+1)/len(paths)*100)
 
                 if csv_table:
-                    # save data as csv
+                    # save data as csv (all in one table)
                     print("Saving csv")
                     df = pd.DataFrame(data=output)
                     print(df)
-                    csv_filename = f"{output_folder}\\{group_name}_csf_flow_results.csv"
+                    csv_filename = f"{output_folder}\\{group_name}_csf_flow_results_t_{threshold}_f_{filter_size}.csv"  # little jim jam to add the threshold to the filename
                     df.to_csv(csv_filename, index=False)
 
-                if total_profile:
+                    # save all in single files
+                    for name, vels in zip(output['name'],output['means']):
+                        dv_axis = np.arange(-(len(vels)-(len(vels)-np.nonzero(vels)[0][0])),len(vels)-np.nonzero(vels)[0][0])*pixel_size # find start of canal based on first non zero speed
+                        df_ind = pd.DataFrame({"x-axis":dv_axis, "mean_vels":vels})
+                        outdir =f"{output_folder}\\csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}" 
+                        ind_csv_filename = f"{name.replace('.tif','')}.csv"
+
+                        if not os.path.exists(outdir):
+                            os.mkdir(outdir)
+                        df_ind.to_csv(outdir+"\\"+ind_csv_filename,index=False)
+
+
+                if total_profile or profile_overlay:
 
                     # plot total profile (mean of means)
                     # make all the arrays start at the same location
@@ -236,66 +242,56 @@ class GUI:
                     # Pad each array to match the maximum length
                     total_means = [np.pad(arr, (5, max_length - len(arr)+5), mode='constant', constant_values=0) for arr in total_means]
 
-                    # get mean velocities and se
-                    mean_velocities = savgol_filter(np.mean(total_means, axis=0),5,2) # compute the mean velocities for every dv position and smooth them
-                    se_velocities = savgol_filter(np.std(total_means,axis=0) / np.sqrt(len(total_means)),5,2) # compute the se for every dv position and smooth them
-                    
-                    fig, ax = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
-                    plt.style.use('Solarize_Light2')
-                    ax.set_title(group_name+" CSF profile")
-                    ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
-                    ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
-                    dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
-                    ax.plot(dv_axis,mean_velocities) 
-                    # Plot grey bands for the standard error
-                    ax.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
-                    ax.legend()
+                    if total_profile:
+                        # get mean velocities and se
+                        mean_velocities = savgol_filter(np.mean(total_means, axis=0),5,2) # compute the mean velocities for every dv position and smooth them
+                        se_velocities = savgol_filter(np.std(total_means,axis=0) / np.sqrt(len(total_means)),5,2) # compute the se for every dv position and smooth them
+                        
+                        fig, ax = plt.subplots( nrows=1, ncols=1 )  # create 1 figure & 1 axis
+                        ax.set_title(group_name+" CSF profile")
+                        ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
+                        ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
+                        dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
+                        ax.plot(dv_axis,mean_velocities) 
+                        # Plot grey bands for the standard error
+                        ax.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
+                        ax.legend()
 
-                    if output_folder:
-                        fig.savefig(output_folder+"\\"+group_name+"_total_vel_threshold"+str(np.round(threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
-                    else:
-                        fig.savefig(group_name+"_total_vel_threshold"+str(np.round(threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
-                    
-                    plt.close(fig)    # close the figure window
+                        if output_folder:
+                            fig.savefig(output_folder+"\\"+group_name+"_total_vel_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
+                        else:
+                            fig.savefig(group_name+"_total_vel_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
+                        
+                        plt.close(fig)    # close the figure window
 
-                    # scatter plot
-                    """
-                    fig2, ax2 = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
-                    plt.style.use('Solarize_Light2')
-                    ax2.set_title(group_name+" CSF profile")
-                    ax2.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
-                    ax2.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
-                    
-                    y = df["means"].values.tolist()
-                    print(y)
-                    # make all the arrays start at the same location
-                    for ind,array in enumerate(y):
-                        y[ind] = array[np.nonzero(array)[0]]
-                    # Pad each array to match the maximum length
-                    y = [np.pad(arr, (5, max_length - len(arr)+5), mode='constant', constant_values=0) for arr in y]
-                    x =  np.arange(-(len(y)-(len(y)-np.nonzero(y)[0][0])),len(y)-np.nonzero(y)[0][0])*pixel_size # find start of canal based on first non zero speed
-                    ax2.scatter(x,y,df["name"].values.tolist()) 
-                    ax2.legend()
+                    if profile_overlay:
 
-                    if output_folder:
-                        fig2.savefig(output_folder+"\\"+group_name+"_scatter_total_vel_threshold"+str(np.round(threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
-                    else:
-                        fig2.savefig(group_name+"_scatter_total_vel_threshold"+str(np.round(threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
-                    
-                    plt.close(fig2)    # close the figure window
-                    """
+                        fig, ax = plt.subplots( nrows=1, ncols=1 )  # create 1 figure & 1 axis
+                        ax.set_title(group_name+" CSF profile")
+                        ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
+                        ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
+                        dv_axis = np.arange(-(len(total_means[0])-(len(total_means[0])-np.nonzero(total_means[0])[0][0])),len(total_means[0])-np.nonzero(total_means[0])[0][0])*pixel_size # find start of canal based on first non zero speed
+                        for profile,nom in zip(total_means,output["name"]):
+                            ax.plot(dv_axis,profile,alpha=0.6,label=nom) 
+                            ax.fill_between(dv_axis,profile, 0, alpha=0.1)
+                        ax.legend()
 
-                # show where the results are outputted
+                        if output_folder:
+                            fig.savefig(output_folder+"\\"+group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
+                        else:
+                            fig.savefig(group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
+                        
+                        plt.close(fig)    # close the figure window
+                # show where the results are outputed
                 subprocess.Popen(f'explorer "{output_folder}"')
 
                 self.analysis_running = False
-                stop_console.set()
-                self.console_thread.join()
-                del self.console_thread
-                stop_console.clear()
+                #stop_console.set()
+                #self.console_thread.join()
+                #del self.console_thread
+                #stop_console.clear()
                 self.window["progressbar"].update(0)
                 
-
 
     def test_threshold(self):
                     

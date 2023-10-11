@@ -12,7 +12,7 @@ import datetime
 pdf = PdfPages('scatter_plots.pdf')
 
 # load data
-data = pd.read_csv("WT_csf_flow_results.csv")
+data = pd.read_csv("Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\IMAGING_TESTS\\Successful_Images\\Inpp5e\\Analysis_1\\Inpp5e_csf_flow_results.csv")
 n = len(data["name"])
 fg, ax = plt.subplots()
 

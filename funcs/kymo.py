@@ -227,7 +227,7 @@ class Kymo:
 
         plt.show()
 
-    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=True):
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=False, gol_parms=(20,3)):
         """
         Performs CSF flow analysis on kymograph data.
 
@@ -253,8 +253,8 @@ class Kymo:
         se_velocities: array
             Array of standard errors of velocities.
         """
-        print(f'Analyzing {self.name}:\n')
-        print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}')
+        print(f'Analyzing {self.name}:')
+        print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}\n')
 
         self.threshold = threshold
         
@@ -283,11 +283,11 @@ class Kymo:
         self.velocities = self.get_velocities(self.binary_kymo)
 
         # process the mean and sd of all the velocities
-        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities)
+        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities, gol_parms)
         print(f"Detected {len(self.mean_velocities)} traces.")
+
         # show plot
-        if dash:
-            self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder) 
+        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder, dash=dash) 
 
         print("\033[0;37;92m",end="") 
         print("Done! ")
@@ -295,7 +295,7 @@ class Kymo:
         
         return self.mean_velocities, self.se_velocities
     
-    def plot(self, save_profile: bool, save_display: bool, init_slice=0,filter_size=None, output_folder=None):
+    def plot(self, save_profile: bool, save_display: bool,  init_slice=0,filter_size=None, output_folder=None, plot_create=False, dash=False):
         """
         Sets up and displays a multi-panel figure to visualize CSF flow analysis results.
 
@@ -315,7 +315,7 @@ class Kymo:
         None
         """
     
-        with plt.style.context('Solarize_Light2'):
+        with plt.style.context('default'):
             fig = plt.figure(layout="constrained", figsize=(10,6))
             gs = GridSpec(3, 3, figure=fig)
             plot1 = fig.add_subplot(gs[0, :])
@@ -358,7 +358,7 @@ class Kymo:
                     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                             fill=False, edgecolor='red', linewidth=1)
                     plot3.add_patch(rect)
-            #print(self.mean_velocities)
+           
             # generate the x-axis in um
             try:
                 dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
@@ -371,6 +371,7 @@ class Kymo:
             except:
                 print("Problem with velocity detection")
                 pass
+
             # interactivity
             axtime = fig.add_axes([0.08, 0.35, 0.2, 0.03])
             time_slider = Slider(
@@ -424,9 +425,8 @@ class Kymo:
                 plt.close(fig)
 
             if save_profile:
-                print("saving figure")
+                print("saving individual profile...")
                 fig, ax = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
-                plt.style.use('Solarize_Light2')
                 ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                 ax.set_title(str(self.name))
@@ -445,9 +445,24 @@ class Kymo:
                 
                 plt.close(fig)    # close the figure window
 
-            else:
+            if plot_create: # creates and returns a plot
+                fig, ax = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
+                plt.style.use('Solarize_Light2')
+                ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
+                ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
+                ax.set_title(str(self.name))
+                try:
+                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
+                    ax.plot(dv_axis,self.mean_velocities) 
+                    # Plot grey bands for the standard error
+                    ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
+                    ax.legend()
+                except:
+                    print("Error")
+                return fig,ax
+            if dash:
                 plt.show()
-
+                
             del fig
 
     def filter_wiener(self,images: np.ndarray, filter_size: tuple):
@@ -602,9 +617,9 @@ class Kymo:
             for region in regionprops(labeled_img):
             # take regions with large enough areas good eccentricity and orientation
                 if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1) and (region.area <= 150):
-                    # if good calculate the speed from the blob's orientation  Speed=1./tan(-Orient_Kymo*pi/180)*(PixelSize/FrameTime);
+                    # if valid calculate the speed from the blob's orientation 
                     # note: no need to convert to rad as np takes rad directly and regionprops returns the orientation angle (between the vertical 0th axis and the major axis of the blob) in rad 
-                    speed = (np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  # maybe un blem with the units
+                    speed = (np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
                     rects.append(mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -618,7 +633,7 @@ class Kymo:
         print()
         return keepers_vel
     
-    def get_mean_vel(self, velocities: np.ndarray):
+    def get_mean_vel(self, velocities: np.ndarray, gol_parms):
         """
         Computes mean velocities and standard errors from a list of velocities.
 
@@ -626,6 +641,8 @@ class Kymo:
         -------
         velocities: list
             List of velocities for each dorso-ventral position.
+        gol_parms: tuple
+            Tuple of the widow length and polyorder for the savitzky golay filter
 
         OUTPUTS:
         --------
@@ -635,7 +652,8 @@ class Kymo:
             Array of standard errors of velocities.
         """
         # compute the mean velocities and se
-        mean_velocities = savgol_filter([np.average(i) for i in velocities],20,3) # compute the mean velocities for every dv position and smooth them
+        print(gol_parms[0],gol_parms[1])
+        mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
         se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,3) # compute the se for every dv position and smooth them
         return mean_velocities, se_velocities
 

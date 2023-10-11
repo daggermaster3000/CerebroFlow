@@ -1,6 +1,6 @@
 function testDashboard(){
     
-    var imagePath = document.getElementById("image_path").files
+    var imagePath = document.getElementById("image_path").files();
     console.log(imagePath)
     eel.test()
 

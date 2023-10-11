@@ -84,6 +84,7 @@ def get_console_output(self,stop_console):
 
 @eel.expose 
 def select_input():
+    print("Prompting user for input...")
     paths = sg.popup_get_file("", no_window=True, default_extension=".tif", multiple_files=True)
     print(paths)
     paths = [path+"<br>" for path in paths] # FOR DISPLAY IN HTML
