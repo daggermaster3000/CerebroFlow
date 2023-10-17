@@ -72,7 +72,20 @@ class GUI:
 
 
     def start(self):
-        
+        welcome = """
+  ___  ____  ____  ____  ____  ____  _____  ____  __    _____  _    _ 
+ / __)( ___)(  _ \( ___)(  _ \(  _ \(  _  )( ___)(  )  (  _  )( \/\/ )
+( (__  )__)  )   / )__)  ) _ < )   / )(_)(  )__)  )(__  )(_)(  )    ( 
+ \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__) v.1.7.0
+
+ A tool to generate and analyze kymographs from central canal csf particle flow.
+
+ Usage: GUI
+ 
+ Notes/Bugs: -Test button only works once (restart required)
+             -Variablity between input images is quite high
+"""
+        print(welcome)
         # Event loop
         while True:
             self.event, self.values = self.window.read()
@@ -104,6 +117,7 @@ class GUI:
             elif self.event == "Clear cache":
                 # clear the cache if you modified (ex:rotation) any input images
                 shutil.rmtree("cache")
+                print("\nCache cleared!\n")
             
             elif self.event == "Test":
                 self.test_thread = threading.Thread(target=self.test)
@@ -126,15 +140,15 @@ class GUI:
         # Redirect standard output to the buffer
         sys.stdout = self.output_buffer
 
-        while not stop_console.is_set():
+        #while not stop_console.is_set():
             # Update the output element with captured console output
-            self.output_element.update(self.output_buffer.getvalue())
-            time.sleep(0.2)
+            #self.output_element.update(self.output_buffer.getvalue())
+            #time.sleep(0.2)
         sys.stdout = sys.__stdout__
     
         
     def test(self):
-       
+            print("Testing...")
             stop_console = threading.Event()
             self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
             self.console_thread.start()

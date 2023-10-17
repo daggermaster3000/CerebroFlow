@@ -15,6 +15,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider
 
 
+
 class Kymo:
     """
     Class Constructor: Kymo
@@ -254,7 +255,7 @@ class Kymo:
             Array of standard errors of velocities.
         """
         print(f'Analyzing {self.name}:')
-        print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}\n')
+        print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}')
 
         self.threshold = threshold
         
@@ -292,7 +293,7 @@ class Kymo:
         print("\033[0;37;92m",end="") 
         print("Done! ")
         print("\033[0;37;40m")
-        
+        print()
         return self.mean_velocities, self.se_velocities
     
     def plot(self, save_profile: bool, save_display: bool,  init_slice=0,filter_size=None, output_folder=None, plot_create=False, dash=False):
@@ -369,7 +370,7 @@ class Kymo:
                 # Plot grey bands for the standard error
                 plot1.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
             except:
-                print("Problem with velocity detection")
+                print("WARNING: Problem with velocity detection")
                 pass
 
             # interactivity
@@ -425,7 +426,7 @@ class Kymo:
                 plt.close(fig)
 
             if save_profile:
-                print("saving individual profile...")
+                print("Saving individual profile plot...")
                 fig, ax = plt.subplots( nrows=1, ncols=1 )  # create figure & 1 axis
                 ax.set_xlabel(r"Dorso-ventral position [$\mu$m]")
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
@@ -437,7 +438,7 @@ class Kymo:
                     ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
                     ax.legend()
                 except:
-                    print("Error")
+                    print("ERROR: No traces detected")
                 if output_folder:
                     fig.savefig(output_folder+"\\"+self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
                 else:
@@ -458,7 +459,7 @@ class Kymo:
                     ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
                     ax.legend()
                 except:
-                    print("Error")
+                    print("ERROR: No traces detected")
                 return fig,ax
             if dash:
                 plt.show()
@@ -485,7 +486,7 @@ class Kymo:
         for ind,im in enumerate(images):
             print(f"Filtering image {np.round((ind+1)/self.N_images*100,1)}%",end = "\r")
             out[ind] = wiener(im,filter_size)
-        print()   
+           
         return out
 
     def swap_axes(self,images):
@@ -531,7 +532,7 @@ class Kymo:
             for i in range(len(kymo)):
                 kymo[i,:,:] = self.rescale(kymo[i,:,:],0,1)
                 print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
-            print()
+            
             return kymo
 
         if method == "Quantile":
@@ -630,7 +631,7 @@ class Kymo:
                 keepers_vel.append(0)
             else:
                 keepers_vel.append(good)
-        print()
+        
         return keepers_vel
     
     def get_mean_vel(self, velocities: np.ndarray, gol_parms):
@@ -652,7 +653,7 @@ class Kymo:
             Array of standard errors of velocities.
         """
         # compute the mean velocities and se
-        print(gol_parms[0],gol_parms[1])
+        print(f"\rSmoothing parameters:\twindow:{gol_parms[0]}\tpolyorder:{gol_parms[1]}")
         mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
         se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,3) # compute the se for every dv position and smooth them
         return mean_velocities, se_velocities
@@ -701,7 +702,7 @@ class Kymo:
         # create cache if non existent
         if "cache" not in os.listdir():
             os.mkdir("cache")
-        print("Input image: ",self.name)
+        print(f"----- Input image: {self.name}\n")
         # process the time lapse to array if it hasnt previously been processed
         if self.name.split(".")[0]+".npy" not in os.listdir("cache"):    
             for ind,im in enumerate(self.data):
