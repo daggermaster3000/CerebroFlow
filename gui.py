@@ -57,8 +57,8 @@ class GUI:
             [sg.HorizontalSeparator()],
             [sg.Text("Progress:"),
             sg.ProgressBar(100, orientation="h", size=(50, 20), key="progressbar")],  
-            [sg.Text("Log:")],  
-            [self.output_element]
+            #[sg.Text("Log:")],  
+            #[self.output_element]
             ], element_justification='left')],
         ]
      
@@ -170,7 +170,7 @@ class GUI:
             #self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
             #self.console_thread.start()
 
-            output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionnary for output
+            output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionary for output
             image_path = self.values["image_path"]
             output_folder = self.values["output_path"].replace("/","\\")
             pixel_size = float(self.values["pixel_size"])
@@ -212,20 +212,36 @@ class GUI:
                     # save data as csv (all in one table)
                     print("Saving csv")
                     df = pd.DataFrame(data=output)
-                    print(df)
+                    
                     csv_filename = f"{output_folder}\\{group_name}_csf_flow_results_t_{threshold}_f_{filter_size}.csv"  # little jim jam to add the threshold to the filename
                     df.to_csv(csv_filename, index=False)
 
-                    # save all in single files
-                    for name, vels in zip(output['name'],output['means']):
-                        dv_axis = np.arange(-(len(vels)-(len(vels)-np.nonzero(vels)[0][0])),len(vels)-np.nonzero(vels)[0][0])*pixel_size # find start of canal based on first non zero speed
-                        df_ind = pd.DataFrame({"x-axis":dv_axis, "mean_vels":vels})
-                        outdir =f"{output_folder}\\csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}" 
-                        ind_csv_filename = f"{name.replace('.tif','')}.csv"
+                    # make all the arrays start at the same location
+                    for ind,array in enumerate(total_means):
+                        total_means[ind] = array[np.nonzero(array)[0]]
 
-                        if not os.path.exists(outdir):
-                            os.mkdir(outdir)
-                        df_ind.to_csv(outdir+"\\"+ind_csv_filename,index=False)
+                    # pad the arrays if not same size
+                    # Find the maximum length of all arrays
+                    max_length = max(len(arr) for arr in total_means)
+
+                    # Pad each array to match the maximum length
+                    total_means = [np.pad(arr, (5, max_length - len(arr)+5), mode='constant', constant_values=0) for arr in total_means]
+
+                    # save all in single files
+                    for name, vels in zip(output['name'],total_means):
+                        try:
+                            
+                            dv_axis = np.arange(-(len(vels)-(len(vels)-np.nonzero(vels)[0][0])),len(vels)-np.nonzero(vels)[0][0])*pixel_size # find start of canal based on first non zero speed
+                            df_ind = pd.DataFrame({"x-axis":dv_axis, "mean_vels":vels})
+                            outdir =f"{output_folder}\\csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}" 
+                            ind_csv_filename = f"{name.replace('.tif','')}.csv"
+
+                            if not os.path.exists(outdir):
+                                os.mkdir(outdir)
+                            df_ind.to_csv(outdir+"\\"+ind_csv_filename,index=False)
+                        except:
+                            print("Sorry Not enough traces were detected! Skipping file \nTry different threshold")
+
 
 
                 if total_profile or profile_overlay:
