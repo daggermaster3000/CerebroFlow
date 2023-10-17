@@ -31,14 +31,14 @@ class Kymo:
     OUTPUTS:
     - None
     """
-    def __init__(self,path, pixel_size, frame_time, filter_size=None):
+    def __init__(self,path, pixel_size, frame_time, dv_thresh=0.3, filter_size=None):
         np.seterr(all="ignore")
         self.path = path
         self.pixel_size = pixel_size    # in um
         self.frame_time = frame_time    # in s
         self.rect = {}  # rectangles for kept blobs
         self.images = []
-        
+        self.dv_thresh = dv_thresh  # threshold at which dv axis will define 0
         self.filtered_images = []
         self.kymo = []
         self.raw_kymo = []
@@ -255,7 +255,7 @@ class Kymo:
             Array of standard errors of velocities.
         """
         print(f'Analyzing {self.name}:')
-        print(f'-threshold: \t{threshold} \n-method: \t{thresholding_method} \n-filter size: \t{filter_size}')
+        print(f'threshold: \t{threshold} \nmethod: \t{thresholding_method} \nfilter size: \t{filter_size}')
 
         self.threshold = threshold
         
@@ -362,8 +362,11 @@ class Kymo:
            
             # generate the x-axis in um
             try:
-                dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
-            
+                try:
+                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])),len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])*self.pixel_size # find start of canal based on first speed over arbitrary threshold
+                except: # if the trace is shite define origin at first non zero value
+                    print("Weird profile encountered. Origin will be set at first non-zero value.\nYou should probably remove it from analysis :p")
+                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
                 # plot the velocities
                 plot1.plot(dv_axis,self.mean_velocities) 
                 
@@ -432,7 +435,7 @@ class Kymo:
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                 ax.set_title(str(self.name))
                 try:
-                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
+                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])),len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])*self.pixel_size # find start of canal based on first speed over arbitrary threshold
                     ax.plot(dv_axis,self.mean_velocities) 
                     # Plot grey bands for the standard error
                     ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
@@ -453,7 +456,7 @@ class Kymo:
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                 ax.set_title(str(self.name))
                 try:
-                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
+                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])),len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])*self.pixel_size # find start of canal based on first speed over arbitrary threshold
                     ax.plot(dv_axis,self.mean_velocities) 
                     # Plot grey bands for the standard error
                     ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
@@ -610,6 +613,7 @@ class Kymo:
             rects = []
             # detect blobs
             print(f"Detecting and processing blobs for d-v positions: {np.round(i/(self.dv_pos-self.N_avg)*100)}%",end = "\r")
+            
             _, labeled_img, stats, centroids = cv2.connectedComponentsWithStats(binary_kymo[i].astype(np.uint8), connectivity=8)
             # labeled_img = label(binary_kymo[i],background=0)
             self.labeled_img_array.append(labeled_img)
@@ -631,7 +635,7 @@ class Kymo:
                 keepers_vel.append(0)
             else:
                 keepers_vel.append(good)
-        
+        print()
         return keepers_vel
     
     def get_mean_vel(self, velocities: np.ndarray, gol_parms):
@@ -653,7 +657,7 @@ class Kymo:
             Array of standard errors of velocities.
         """
         # compute the mean velocities and se
-        print(f"\rSmoothing parameters:\twindow:{gol_parms[0]}\tpolyorder:{gol_parms[1]}")
+        #print(f"\rSmoothing parameters:\twindow:{gol_parms[0]}\tpolyorder:{gol_parms[1]}")
         mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
         se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,3) # compute the se for every dv position and smooth them
         return mean_velocities, se_velocities
