@@ -256,7 +256,10 @@ class GUI:
                     # save all in single files
                     for name, vels in zip(output['name'],total_means):
                         try:
-                            dv_axis = np.arange(-(len(vels)-(len(vels)-np.argwhere(vels>self.dv_thresh)[0][0])),len(vels)-np.argwhere(vels>self.dv_thresh)[0][0])*pixel_size # find start of canal based on first speed over arbitrary threshold
+                            dv_axis, warn = ky.get_dv_axis(vels,self.dv_thresh,pixel_size)
+                            if warn:
+                                print(f"WARNING: {name} dv_axis origin is at first non-zero value")
+
                             df_ind = pd.DataFrame({"x-axis":dv_axis, "mean_vels":vels})
                             outdir =f"{output_folder}\\csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}" 
                             ind_csv_filename = f"{name.replace('.tif','')}.csv"
@@ -265,10 +268,8 @@ class GUI:
                                 os.mkdir(outdir)
                             df_ind.to_csv(outdir+"\\"+ind_csv_filename,index=False)
                         except:
-                            print("Sorry Not enough traces were detected! Skipping file \nTry different threshold")
-
-
-
+                            raise "Error"
+                            
                 if total_profile or profile_overlay:
 
                     # plot total profile (mean of means)
@@ -287,8 +288,9 @@ class GUI:
                         # get mean velocities and se
                         mean_velocities = savgol_filter(np.mean(total_means, axis=0),5,2) # compute the mean velocities for every dv position and smooth them
                         se_velocities = savgol_filter(np.std(total_means,axis=0) / np.sqrt(len(total_means)),5,2) # compute the se for every dv position and smooth them
-                        dv_axis = np.arange(-(len(vels)-(len(vels)-np.argwhere(vels>self.dv_thresh)[0][0])),len(vels)-np.argwhere(vels>self.dv_thresh)[0][0])*pixel_size # find start of canal based on first speed over arbitrary threshold
-
+                        dv_axis, warn = ky.get_dv_axis(vels,self.dv_thresh,pixel_size)
+                        if warn:
+                                print(f"WARNING: {name} dv_axis origin is at first non-zero value")
                         fig, ax = plt.subplots( nrows=1, ncols=1 )  # create 1 figure & 1 axis
                         ax.set_title(group_name+" CSF profile")
                         ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
@@ -313,15 +315,13 @@ class GUI:
                         ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                        
                         for profile,nom in zip(total_means,output["name"]):
-                            try:
-                                dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>self.dv_thresh)[0][0])),len(profile)-np.argwhere(profile>self.dv_thresh)[0][0])*pixel_size # find start of canal based on first speed over arbitrary threshold
-                            except:
-                                print("Weird profile encountered. Origin will be set at first non-zero value.\nYou should probably remove it from analysis :p")
-                                dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>0)[0][0])),len(profile)-np.argwhere(profile>0)[0][0])*pixel_size # find start of canal based on first speed over 0
+                        
+                            dv_axis, _ = ky.get_dv_axis(profile,self.dv_thresh,pixel_size)
                             ax.plot(dv_axis,profile,alpha=0.6,label=nom) 
                             ax.fill_between(dv_axis,profile, 0, alpha=0.1)
+
                         ax.legend()
-                        fig.xlim()
+                        
                         if output_folder:
                             fig.savefig(output_folder+"\\"+group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
                         else:
@@ -354,6 +354,7 @@ class GUI:
         path = sg.popup_get_file("", no_window=True, default_extension=".tif")
         exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
         exp.test_filter()
+    
 
 
 Gui = GUI()

@@ -315,7 +315,12 @@ class Kymo:
         --------
         None
         """
-    
+        # calculate dv_axis
+        self.dv_axis, warn = get_dv_axis(self.mean_velocities,self.dv_thresh,self.pixel_size)
+        if warn:
+            print(f"WARNING: {self.name} dv_axis origin is at first non-zero value") 
+
+
         with plt.style.context('default'):
             fig = plt.figure(layout="constrained", figsize=(10,6))
             gs = GridSpec(3, 3, figure=fig)
@@ -350,7 +355,7 @@ class Kymo:
             plot5.set_ylabel(f"Time [{self.frame_time} s]")
             plot5.set_xlabel(r"R-C axis [frames]")
 
-            # plot 1
+            # plot 1 Dashboard
             for region in regionprops(self.labeled_img_array[init_slice]):
                 # take regions with large enough areas
                 if (region.area < 100) and (region.area >= 15) and (region.eccentricity>0.9) and (np.degrees(region.orientation)>-95) and (np.degrees(region.orientation)<95) and (np.round(region.orientation,1)!= 0.0):         
@@ -362,16 +367,11 @@ class Kymo:
            
             # generate the x-axis in um
             try:
-                try:
-                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])),len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])*self.pixel_size # find start of canal based on first speed over arbitrary threshold
-                except: # if the trace is shite define origin at first non zero value
-                    print("Weird profile encountered. Origin will be set at first non-zero value.\nYou should probably remove it from analysis :p")
-                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])),len(self.mean_velocities)-np.nonzero(self.mean_velocities)[0][0])*self.pixel_size # find start of canal based on first non zero speed
                 # plot the velocities
-                plot1.plot(dv_axis,self.mean_velocities) 
+                plot1.plot(self.dv_axis,self.mean_velocities) 
                 
                 # Plot grey bands for the standard error
-                plot1.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
+                plot1.fill_between(self.dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
             except:
                 print("WARNING: Problem with velocity detection")
                 pass
@@ -435,10 +435,9 @@ class Kymo:
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                 ax.set_title(str(self.name))
                 try:
-                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])),len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])*self.pixel_size # find start of canal based on first speed over arbitrary threshold
-                    ax.plot(dv_axis,self.mean_velocities) 
+                    ax.plot(self.dv_axis,self.mean_velocities) 
                     # Plot grey bands for the standard error
-                    ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
+                    ax.fill_between(self.dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
                     ax.legend()
                 except:
                     print("ERROR: No traces detected")
@@ -456,10 +455,9 @@ class Kymo:
                 ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
                 ax.set_title(str(self.name))
                 try:
-                    dv_axis = np.arange(-(len(self.mean_velocities)-(len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])),len(self.mean_velocities)-np.argwhere(self.mean_velocities>self.dv_thresh)[0][0])*self.pixel_size # find start of canal based on first speed over arbitrary threshold
-                    ax.plot(dv_axis,self.mean_velocities) 
+                    ax.plot(self.dv_axis,self.mean_velocities) 
                     # Plot grey bands for the standard error
-                    ax.fill_between(dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
+                    ax.fill_between(self.dv_axis, self.mean_velocities - self.se_velocities, self.mean_velocities + self.se_velocities, color='grey', alpha=0.3, label='Standard Error')
                     ax.legend()
                 except:
                     print("ERROR: No traces detected")
@@ -742,7 +740,25 @@ class Kymo:
         scaled_matrix = (max-min)*(array - min_val) / (max_val - min_val) + max
         
         return scaled_matrix
+    
 
+def get_dv_axis(profile,thresh,pixel_size,bias=0):
+        """
+        Finds the start of the central canal along the dv_axis based on a given threshold and bias
+
+        Returns:
+        -------
+        an array
+        """
+        warn=False
+        try:
+            dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>thresh)[0][0]))-bias,len(profile)-np.argwhere(profile>thresh)[0][0]-bias)*pixel_size # find start of canal based on first speed over arbitrary threshold
+        except:
+            thresh = 0
+            dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>thresh)[0][0]))-bias,len(profile)-np.argwhere(profile>thresh)[0][0]-bias)*pixel_size 
+            print("WARNING: Weird profile encountered. Origin will be set at first non-zero value.\nCheck the input image :p")
+            warn = True
+        return dv_axis,warn
     
 
 if __name__ == "__main__":
