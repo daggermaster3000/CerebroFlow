@@ -742,7 +742,7 @@ class Kymo:
         return scaled_matrix
     
 
-def get_dv_axis(profile,thresh,pixel_size,bias=0):
+def get_dv_axis(profile,thresh,pixel_size,bias=-15):
         """
         Finds the start of the central canal along the dv_axis based on a given threshold and bias
 
@@ -754,9 +754,13 @@ def get_dv_axis(profile,thresh,pixel_size,bias=0):
         try:
             dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>thresh)[0][0]))-bias,len(profile)-np.argwhere(profile>thresh)[0][0]-bias)*pixel_size # find start of canal based on first speed over arbitrary threshold
         except:
-            thresh = 0
-            dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>thresh)[0][0]))-bias,len(profile)-np.argwhere(profile>thresh)[0][0]-bias)*pixel_size 
-            print("WARNING: Weird profile encountered. Origin will be set at first non-zero value.\nCheck the input image :p")
+            try:
+                print("WARNING: Weird profile encountered. Origin will be set at first non-zero value.\nCheck the input image :p")
+                thresh = 0
+                dv_axis = np.arange(-(len(profile)-(len(profile)-np.argwhere(profile>thresh)[0][0]))-bias,len(profile)-np.argwhere(profile>thresh)[0][0]-bias)*pixel_size 
+            except:
+                print("WARNING: Setting origin at first non-zero failed. Dv-axis origin will be set arbitrarily at position 30.")
+                dv_axis = np.arange(-(len(profile)-(len(profile)-29)),len(profile)-29)*pixel_size 
             warn = True
         return dv_axis,warn
     
