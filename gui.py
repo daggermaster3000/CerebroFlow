@@ -13,7 +13,7 @@ import shutil
 import subprocess
 import os
 
-
+# I hate git
 class GUI:
     def __init__(self):
         warnings.filterwarnings("ignore", category=UserWarning)
