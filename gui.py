@@ -22,7 +22,7 @@ class GUI:
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
-            [sg.Text("CSF Flow Analysis", font=("Helvetica", 20))],
+            [sg.Text("Cerebroflow v.dv-axis issue", font=("Helvetica", 20))],
             [sg.Column([
             [sg.Text("Input(s):         "), sg.InputText(key="image_path"), sg.FilesBrowse()],
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
@@ -32,7 +32,7 @@ class GUI:
             [sg.Text("Frame Time (s):"), sg.Combo([0.291,0.1],key="frame_time", size=(6,2), default_value = 0.159)],
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
-            [sg.Text("Smoothing window:"), sg.InputText(key="smoothwindow", size=(6,2), default_text = 20),sg.Text("Smoothing polyorder:"), sg.InputText(key="smoothpoly", size=(6,2), default_text = 3)],
+            [sg.Text("Smoothing window:"), sg.InputText(key="smoothwindow", size=(6,2), default_text = 60),sg.Text("Smoothing polyorder:"), sg.InputText(key="smoothpoly", size=(6,2), default_text = 3)],
             [sg.Text("Thresholding Method:")],
             [sg.Radio("Hardcore", "thresholding", key="method_hardcore"),
             sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)]]
@@ -42,6 +42,7 @@ class GUI:
             [sg.Radio("Filename", "naming_method", key="Filename")],
             [sg.Radio("Custom", "naming_method", key="Custom", default=True),
             sg.Text("Group name:"), sg.InputText(key="group_name", default_text = "GroupName")],
+            [sg.Text("D-V start threshold:"), sg.InputText(key="dv_thresh", size=(6,2), default_text = 0.2)],
             [sg.Text("Outputs:")],
             [sg.Checkbox("Individual flow profiles", key="individual_profiles", default=True)],
             [sg.Checkbox("Total flow profile", key="total_profile", default=True)],
@@ -72,18 +73,25 @@ class GUI:
 
 
     def start(self):
-        welcome = """
-  ___  ____  ____  ____  ____  ____  _____  ____  __    _____  _    _ 
- / __)( ___)(  _ \( ___)(  _ \(  _ \(  _  )( ___)(  )  (  _  )( \/\/ )
-( (__  )__)  )   / )__)  ) _ < )   / )(_)(  )__)  )(__  )(_)(  )    ( 
- \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__) v.1.7.0
+        welcome = """  
+                                                                                           o
+  ___  ____  ____  ____  ____  ____  _____  ____  __    _____  _    _                     o
+ / __)( ___)(  _ \( ___)(  _ \(  _ \(  _  )( ___)(  )  (  _  )( \/\/ )                     o                   
+( (__  )__)  )   / )__)  ) _ < )   / )(_)(  )__)  )(__  )(_)(  )    (                     o
+ \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__) v.1.7.0        ><'>
 
- A tool to generate and analyze kymographs from central canal csf particle flow.
+ A tool to generate and analyze kymographs from central canal csf particle flow images.
 
  Usage: GUI
- 
+
  Notes/Bugs: -Test button only works once (restart required)
              -Variablity between input images is quite high
+
+
+
+
+
+
 """
         print(welcome)
         # Event loop
@@ -99,7 +107,7 @@ class GUI:
                 break
 
             elif self.event == "Run Analysis":
-
+                
                 if self.analysis_running:
                     sg.popup("Analysis in progress please wait...", title="CSF Flow Analysis")
                 else:
@@ -167,7 +175,7 @@ class GUI:
                 thresholding_method = "Quantile"
             paths = self.values["image_path"].split(";")
             for ind, path in enumerate(paths):
-                exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+                exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
                 exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, filter_size=filter_size, output_folder=output_folder,dash=True)
             del exp
             # terminate threads
@@ -191,6 +199,7 @@ class GUI:
             frame_time = float(self.values["frame_time"])
             filter_size = int(self.values["filter_size"]) if self.values["filter_size"] else None
             threshold = float(self.values["threshold"])
+            self.dv_thresh = float(self.values["dv_thresh"])
             group_name = self.values["group_name"] if self.values["Custom"] else None
             gol_parms = (int(self.values["smoothwindow"]),int(self.values["smoothpoly"]))
 
@@ -210,7 +219,7 @@ class GUI:
                 print("args from filename not yet supported!")
             else:
                 for ind, path in enumerate(paths):
-                    exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+                    exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
                     means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
                     total_means.append(means)
                     output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))
@@ -244,8 +253,11 @@ class GUI:
                     # save all in single files
                     for name, vels in zip(output['name'],total_means):
                         try:
-                            
-                            dv_axis = np.arange(-(len(vels)-(len(vels)-np.nonzero(vels)[0][0])),len(vels)-np.nonzero(vels)[0][0])*pixel_size # find start of canal based on first non zero speed
+                            dv_axis, warn = ky.get_dv_axis(vels,self.dv_thresh,pixel_size)
+                            if warn:
+                                pass
+                                # print(f"WARNING: {name} dv_axis origin is at first non-zero value")
+
                             df_ind = pd.DataFrame({"x-axis":dv_axis, "mean_vels":vels})
                             outdir =f"{output_folder}\\csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}" 
                             ind_csv_filename = f"{name.replace('.tif','')}.csv"
@@ -254,10 +266,8 @@ class GUI:
                                 os.mkdir(outdir)
                             df_ind.to_csv(outdir+"\\"+ind_csv_filename,index=False)
                         except:
-                            print("Sorry Not enough traces were detected! Skipping file \nTry different threshold")
-
-
-
+                            raise "Error"
+                            
                 if total_profile or profile_overlay:
 
                     # plot total profile (mean of means)
@@ -276,12 +286,14 @@ class GUI:
                         # get mean velocities and se
                         mean_velocities = savgol_filter(np.mean(total_means, axis=0),5,2) # compute the mean velocities for every dv position and smooth them
                         se_velocities = savgol_filter(np.std(total_means,axis=0) / np.sqrt(len(total_means)),5,2) # compute the se for every dv position and smooth them
-                        
+                        dv_axis, warn = ky.get_dv_axis(vels,self.dv_thresh,pixel_size)
+                        if warn:
+                            pass
+                                # print(f"WARNING: {name} dv_axis origin is at first non-zero value")
                         fig, ax = plt.subplots( nrows=1, ncols=1 )  # create 1 figure & 1 axis
                         ax.set_title(group_name+" CSF profile")
                         ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
                         ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
-                        dv_axis = np.arange(-(len(mean_velocities)-(len(mean_velocities)-np.nonzero(mean_velocities)[0][0])),len(mean_velocities)-np.nonzero(mean_velocities)[0][0])*pixel_size # find start of canal based on first non zero speed
                         ax.plot(dv_axis,mean_velocities) 
                         # Plot grey bands for the standard error
                         ax.fill_between(dv_axis, mean_velocities - se_velocities, mean_velocities + se_velocities, color='grey', alpha=0.3, label='Standard Error')
@@ -300,12 +312,15 @@ class GUI:
                         ax.set_title(group_name+" CSF profile")
                         ax.set_xlabel(r"Absolute Dorso-ventral position [$\mu$m]")
                         ax.set_ylabel(r"Average rostro-caudal velocity [$\mu$m/s]")
-                        dv_axis = np.arange(-(len(total_means[0])-(len(total_means[0])-np.nonzero(total_means[0])[0][0])),len(total_means[0])-np.nonzero(total_means[0])[0][0])*pixel_size # find start of canal based on first non zero speed
+                       
                         for profile,nom in zip(total_means,output["name"]):
+                        
+                            dv_axis, _ = ky.get_dv_axis(profile,self.dv_thresh,pixel_size)
                             ax.plot(dv_axis,profile,alpha=0.6,label=nom) 
                             ax.fill_between(dv_axis,profile, 0, alpha=0.1)
-                        ax.legend()
 
+                        ax.legend()
+                        
                         if output_folder:
                             fig.savefig(output_folder+"\\"+group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
                         else:
@@ -338,6 +353,7 @@ class GUI:
         path = sg.popup_get_file("", no_window=True, default_extension=".tif")
         exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
         exp.test_filter()
+    
 
 
 Gui = GUI()
