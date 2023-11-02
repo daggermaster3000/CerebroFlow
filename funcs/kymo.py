@@ -1,6 +1,5 @@
 """
-A function to get the kymograph of an image file 
-and analyse it to generate a csf flow profile (based on Thouvenin et al. 2020)
+Code to generate kymographs of an image file and analyse them to generate a flow/velocity profile (based on Thouvenin et al. 2020)
 """
 
 import cv2
@@ -47,6 +46,7 @@ class Kymo:
         self.binary_kymo = []
         # open the data
         self.data, self.name = self.open_tiff()
+        self.name = os.path.basename(self.name)
         # get some information about the data
         _, self.first_img = self.data.retrieve()
         self.dv_pos,self.width = np.shape(self.first_img)
@@ -423,7 +423,7 @@ class Kymo:
                 
             if save_display:
                 if output_folder:
-                    fig.savefig(output_folder+"\\"+self.name.split(".")[0]+"_display_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png',dpi=fig.dpi)
+                    fig.savefig(os.path.join(output_folder,self.name.split(".")[0]+"_display_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png'),dpi=fig.dpi)
                 else:
                     fig.savefig(self.name.split(".")[0]+"_display_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png',dpi=fig.dpi)
                 plt.close(fig)
@@ -442,7 +442,7 @@ class Kymo:
                 except:
                     print("ERROR: No traces detected")
                 if output_folder:
-                    fig.savefig(output_folder+"\\"+self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
+                    fig.savefig(os.path.join(output_folder,self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png'))   # save the figure to file
                 else:
                     fig.savefig(self.name.split(".")[0]+"_threshold"+str(np.round(self.threshold,1))+"_filter"+str(filter_size)+'.png')   # save the figure to file
                 
@@ -685,7 +685,7 @@ class Kymo:
         """
         A function to save an np.array as .npy binary (not really a cache)
         """ 
-        np.save("cache\\"+self.name.split(".")[0],self.images)
+        np.save(os.path.join("cache",self.name.split(".")[0]),self.images)
 
     def init_bin(self):
         """
@@ -714,7 +714,7 @@ class Kymo:
         else:
             # if it already has been processed load it from the cache
             print("Loading from previous processing!")
-            self.images = np.load("cache\\"+self.name.split(".")[0]+".npy",allow_pickle=True)
+            self.images = np.load(os.path.join("cache",self.name.split(".")[0]+".npy"),allow_pickle=True)
 
     def rescale(self,array,min,max):
         """
@@ -764,13 +764,3 @@ def get_dv_axis(profile,thresh,pixel_size,bias=-15):
             warn = True
         return dv_axis,warn
     
-
-if __name__ == "__main__":
-    path = "Z:\\qfavey\\01_Experiments\\01_CSF_FLOW\\PIPELINE_TEST\\BioProtocol_CSFflowMeasurement\\TestFiles\\FlowData\\WT5_2_Cropped_AdditionalNoise.tif"
-    exp1 = Kymo(path, pixel_size=0.189, frame_time=0.1)
-    for t in np.arange(0.5,0.7,0.1):
-        exp1.generate_kymo(threshold=t, save_display=True)
-        for f in np.arange(1,3,1):
-            exp1.generate_kymo(threshold=t, save_display=True, filter_size=(f,f))
-    exp1.generate_kymo(threshold=0.6, save_display=True)
-    # exp1.test_filter()

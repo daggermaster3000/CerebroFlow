@@ -13,12 +13,12 @@ import shutil
 import subprocess
 import os
 
-
+# I hate git
 class GUI:
     def __init__(self):
         warnings.filterwarnings("ignore", category=UserWarning)
 
-        sg.theme("Default1")
+        # sg.theme("Default1")
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
@@ -86,7 +86,6 @@ class GUI:
 
  Notes/Bugs: -Test button only works once (restart required)
              -Variablity between input images is quite high
-
 
 
 
@@ -162,7 +161,7 @@ class GUI:
             self.console_thread.start()
 
             image_path = self.values["image_path"]
-            output_folder = self.values["output_path"].replace("/","\\")
+            output_folder = os.path.normpath(self.values["output_path"])
             pixel_size = float(self.values["pixel_size"])
             frame_time = float(self.values["frame_time"])
             filter_size = int(self.values["filter_size"]) if self.values["filter_size"] else None
@@ -175,7 +174,7 @@ class GUI:
                 thresholding_method = "Quantile"
             paths = self.values["image_path"].split(";")
             for ind, path in enumerate(paths):
-                exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
+                exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=threshold)
                 exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, filter_size=filter_size, output_folder=output_folder,dash=True)
             del exp
             # terminate threads
@@ -188,13 +187,26 @@ class GUI:
 
     def run_analysis(self):
             
+            # Old code from when the console was displayed in the gui
             #stop_console = threading.Event()
             #self.console_thread = threading.Thread(target=self.get_console_output,args=(stop_console,))
             #self.console_thread.start()
 
+            # check the os to define how we open the folder once the data is processed
+            if sys.platform == 'darwin':
+                def openFolder(path):
+                    subprocess.check_call(['open', '--', path])
+            elif sys.platform == 'linux2':
+                def openFolder(path):
+                    subprocess.check_call(['xdg-open', '--', path])
+            elif sys.platform == 'win32':
+                def openFolder(path):
+                    subprocess.check_call(['explorer', path])
+
+
             output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionary for output
             image_path = self.values["image_path"]
-            output_folder = self.values["output_path"].replace("/","\\")
+            output_folder = os.path.normpath(self.values["output_path"])
             pixel_size = float(self.values["pixel_size"])
             frame_time = float(self.values["frame_time"])
             filter_size = int(self.values["filter_size"]) if self.values["filter_size"] else None
@@ -219,7 +231,7 @@ class GUI:
                 print("args from filename not yet supported!")
             else:
                 for ind, path in enumerate(paths):
-                    exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
+                    exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
                     means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
                     total_means.append(means)
                     output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))
@@ -236,7 +248,7 @@ class GUI:
                     print("Saving csv")
                     df = pd.DataFrame(data=output)
                     
-                    csv_filename = f"{output_folder}\\{group_name}_csf_flow_results_t_{threshold}_f_{filter_size}.csv"  # little jim jam to add the threshold to the filename
+                    csv_filename = os.path.join(output_folder,f"{group_name}_csf_flow_results_t_{threshold}_f_{filter_size}.csv")  # little jim jam to add the threshold to the filename
                     df.to_csv(csv_filename, index=False)
 
                     # make all the arrays start at the same location
@@ -259,12 +271,12 @@ class GUI:
                                 # print(f"WARNING: {name} dv_axis origin is at first non-zero value")
 
                             df_ind = pd.DataFrame({"x-axis":dv_axis, "mean_vels":vels})
-                            outdir =f"{output_folder}\\csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}" 
+                            outdir =os.path.join(output_folder,f"csv_{group_name}_results_thresh_{threshold}_filt_{filter_size}")
                             ind_csv_filename = f"{name.replace('.tif','')}.csv"
 
                             if not os.path.exists(outdir):
                                 os.mkdir(outdir)
-                            df_ind.to_csv(outdir+"\\"+ind_csv_filename,index=False)
+                            df_ind.to_csv(os.path.join(outdir,ind_csv_filename),index=False)
                         except:
                             raise "Error"
                             
@@ -300,7 +312,7 @@ class GUI:
                         ax.legend()
 
                         if output_folder:
-                            fig.savefig(output_folder+"\\"+group_name+"_total_vel_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
+                            fig.savefig(os.path.join(output_folder,group_name+"_total_vel_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png'))   # save the figure to file
                         else:
                             fig.savefig(group_name+"_total_vel_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
                         
@@ -322,13 +334,16 @@ class GUI:
                         ax.legend()
                         
                         if output_folder:
-                            fig.savefig(output_folder+"\\"+group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
+                            fig.savefig(os.path.join(output_folder,group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png'))   # save the figure to file
                         else:
                             fig.savefig(group_name+"_profile_overlay_t"+str(np.round(threshold,1))+"_f"+str(filter_size)+'.png')   # save the figure to file
                         
                         plt.close(fig)    # close the figure window
+
+
                 # show where the results are outputed
-                subprocess.Popen(f'explorer "{output_folder}"')
+                # subprocess.Popen(f'explorer "{output_folder}"')
+                openFolder(output_folder)
 
                 self.analysis_running = False
                 #stop_console.set()
@@ -337,13 +352,13 @@ class GUI:
                 #stop_console.clear()
                 self.window["progressbar"].update(0)
                 
-
+   
     def test_threshold(self):
                     
         pixel_size = float(self.values["pixel_size"])
         frame_time = float(self.values["frame_time"])
         path = sg.popup_get_file("", no_window=True, default_extension=".tif")
-        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+        exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time)
         exp.test_threshold()
 
     def test_filter(self):
@@ -351,8 +366,10 @@ class GUI:
         pixel_size = float(self.values["pixel_size"])
         frame_time = float(self.values["frame_time"])
         path = sg.popup_get_file("", no_window=True, default_extension=".tif")
-        exp = ky.Kymo(path.replace("/","\\"), pixel_size=pixel_size, frame_time=frame_time)
+        exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time)
         exp.test_filter()
+    
+    
     
 
 
