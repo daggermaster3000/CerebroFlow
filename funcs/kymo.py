@@ -685,7 +685,7 @@ class Kymo:
         """
         A function to save an np.array as .npy binary (not really a cache)
         """ 
-        np.save(os.path.join("cache"+self.name.split(".")[0]),self.images)
+        np.save(os.path.join("cache",self.name.split(".")[0]),self.images)
 
     def init_bin(self):
         """
@@ -714,7 +714,7 @@ class Kymo:
         else:
             # if it already has been processed load it from the cache
             print("Loading from previous processing!")
-            self.images = np.load("cache\\"+self.name.split(".")[0]+".npy",allow_pickle=True)
+            self.images = np.load(os.path.join("cache",self.name.split(".")[0]+".npy"),allow_pickle=True)
 
     def rescale(self,array,min,max):
         """

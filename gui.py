@@ -174,7 +174,7 @@ class GUI:
                 thresholding_method = "Quantile"
             paths = self.values["image_path"].split(";")
             for ind, path in enumerate(paths):
-                exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
+                exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=threshold)
                 exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, filter_size=filter_size, output_folder=output_folder,dash=True)
             del exp
             # terminate threads
