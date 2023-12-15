@@ -288,7 +288,8 @@ class Kymo:
         print(f"Detected {len(self.mean_velocities)} traces.")
 
         # show plot
-        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder, dash=dash) 
+        if dash:
+            self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder, dash=dash) 
 
         print("\033[0;37;92m",end="") 
         print("Done! ")
