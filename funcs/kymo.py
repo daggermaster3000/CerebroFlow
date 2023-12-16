@@ -44,15 +44,19 @@ class Kymo:
         self.mean_velocities = []
         self.se_velocities = []
         self.binary_kymo = []
+        self.cc_location = None
+
         # open the data
         self.data, self.name = self.open_tiff()
         self.name = os.path.basename(self.name)
+
         # get some information about the data
         _, self.first_img = self.data.retrieve()
         self.dv_pos,self.width = np.shape(self.first_img)
         self.N_images = self.data.length
         # check the if a .npy was created if not create one
         self.init_bin()
+
         # convert to numpy array
         self.images = np.array(self.images,dtype='>u2')
 
@@ -544,6 +548,7 @@ class Kymo:
                 means.append(np.mean(kymo[dv,:,:]))
             
             central_canal = [np.max(means), np.argmax(means)]   # returns the max intensity and location of th cc
+            self.cc_location = central_canal[1]
             min = np.quantile(kymo[central_canal[1]], threshold) # calculate the min value based on the threshold at the cc position
             kymo[kymo < min]  = min # all values smaller than min become min
             kymo = self.rescale(kymo,1,2) # rescaling between 1 and 2
