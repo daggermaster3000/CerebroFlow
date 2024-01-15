@@ -33,6 +33,8 @@ class GUI:
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
             [sg.Text("Smoothing window:"), sg.InputText(key="smoothwindow", size=(6,2), default_text = 60),sg.Text("Smoothing polyorder:"), sg.InputText(key="smoothpoly", size=(6,2), default_text = 3)],
+            [sg.Radio("Golay", "Filtering", key="Golay"),
+            sg.Radio("Smooth", "Filtering", key="Smooth", default=True)],
             [sg.Text("Thresholding Method:")],
             [sg.Radio("Hardcore", "thresholding", key="method_hardcore"),
             sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)]]
@@ -195,13 +197,13 @@ class GUI:
             # check the os to define how we open the folder once the data is processed
             if sys.platform == 'darwin':
                 def openFolder(path):
-                    subprocess.check_call(['open', '--', path])
+                    subprocess.call(['open', '--', path])
             elif sys.platform == 'linux2':
                 def openFolder(path):
-                    subprocess.check_call(['xdg-open', '--', path])
+                    subprocess.call(['xdg-open', '--', path])
             elif sys.platform == 'win32':
                 def openFolder(path):
-                    subprocess.check_call(['explorer', path])
+                    subprocess.call(['explorer', path])
 
 
             output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionary for output
@@ -219,6 +221,11 @@ class GUI:
                 thresholding_method = "Hardcore"
             else:
                 thresholding_method = "Quantile"
+            
+            if self.values["Golay"]:
+                filtering_method = "Golay"
+            else:
+                filtering_method = "Smooth"
 
             ind_profile = self.values["individual_profiles"]
             total_profile = self.values["total_profile"]
@@ -232,7 +239,7 @@ class GUI:
             else:
                 for ind, path in enumerate(paths):
                     exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
-                    means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
+                    means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method,filtering_method=filtering_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
                     total_means.append(means)
                     output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))
                     output["group"].append(group_name)

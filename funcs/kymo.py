@@ -232,7 +232,7 @@ class Kymo:
 
         plt.show()
 
-    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=False, gol_parms=(20,3)):
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", filtering_method="Smooth", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=False, gol_parms=(20,3)):
         """
         Performs CSF flow analysis on kymograph data.
 
@@ -288,7 +288,7 @@ class Kymo:
         self.velocities = self.get_velocities(self.binary_kymo)
 
         # process the mean and sd of all the velocities
-        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities, gol_parms)
+        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities, gol_parms, filtering_parms=filtering_method)
         print(f"Detected {len(self.mean_velocities)} traces.")
 
         # show plot
@@ -628,7 +628,7 @@ class Kymo:
                 if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1) and (region.area <= 150):
                     # if valid calculate the speed from the blob's orientation 
                     # note: no need to convert to rad as np takes rad directly and regionprops returns the orientation angle (between the vertical 0th axis and the major axis of the blob) in rad 
-                    speed = (np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  
+                    speed = -(np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
                     rects.append(mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -642,7 +642,9 @@ class Kymo:
         print()
         return keepers_vel
     
-    def get_mean_vel(self, velocities: np.ndarray, gol_parms):
+
+    
+    def get_mean_vel(self, velocities: np.ndarray, gol_parms, filtering_parms):
         """
         Computes mean velocities and standard errors from a list of velocities.
 
@@ -652,6 +654,7 @@ class Kymo:
             List of velocities for each dorso-ventral position.
         gol_parms: tuple
             Tuple of the widow length and polyorder for the savitzky golay filter
+        filtering_parms: "Golay" or "Smooth"
 
         OUTPUTS:
         --------
@@ -660,10 +663,24 @@ class Kymo:
         se_velocities: array
             Array of standard errors of velocities.
         """
+        def smooth(a,WSZ=5):
+            # a: NumPy 1-D array containing the data to be smoothed
+            # WSZ: smoothing window size needs, which must be odd number,
+            # as in the original MATLAB implementation
+            out0 = np.convolve(a,np.ones(WSZ,dtype=int),'valid')/WSZ    
+            r = np.arange(1,WSZ-1,2)
+            start = np.cumsum(a[:WSZ-1])[::2]/r
+            stop = (np.cumsum(a[:-WSZ:-1])[::2]/r)[::-1]
+            return np.concatenate((  start , out0, stop  ))
+        
         # compute the mean velocities and se
         #print(f"\rSmoothing parameters:\twindow:{gol_parms[0]}\tpolyorder:{gol_parms[1]}")
-        mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
-        se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,3) # compute the se for every dv position and smooth them
+        if filtering_parms == "Golay":
+            mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
+            se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],gol_parms[0],gol_parms[1]) # compute the se for every dv position and smooth them
+        elif filtering_parms == "Smooth":
+            mean_velocities = smooth([np.average(i) for i in velocities]) # compute the mean velocities for every dv position and smooth them
+            se_velocities = smooth([np.std(i) / np.sqrt(np.size(i)) for i in velocities]) # compute the se for every dv position and smooth them
         return mean_velocities, se_velocities
 
     # helper functions
