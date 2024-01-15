@@ -612,7 +612,7 @@ class Kymo:
         
 
         # iterate over every d-v pos
-        for i in range(0,self.dv_pos-self.N_avg):
+        for i in range(self.dv_pos-self.N_avg-1,-1,-1):
             good = []
             rects = []
             # detect blobs
