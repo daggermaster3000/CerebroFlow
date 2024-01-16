@@ -34,7 +34,8 @@ class GUI:
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
             [sg.Text("Smoothing window:"), sg.InputText(key="smoothwindow", size=(6,2), default_text = 60),sg.Text("Smoothing polyorder:"), sg.InputText(key="smoothpoly", size=(6,2), default_text = 3)],
             [sg.Radio("Golay", "Filtering", key="Golay"),
-            sg.Radio("Smooth", "Filtering", key="Smooth", default=True)],
+            sg.Radio("Smooth", "Filtering", key="Smooth"),
+            sg.Radio("Combine", "Filtering", key="Combine", default=True)],
             [sg.Text("Thresholding Method:")],
             [sg.Radio("Hardcore", "thresholding", key="method_hardcore"),
             sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)]]
@@ -111,6 +112,10 @@ class GUI:
                 
                 if self.analysis_running:
                     sg.popup("Analysis in progress please wait...", title="CSF Flow Analysis")
+                if not self.values["output_path"]:
+                    sg.popup_error("Please provide output location", title="Error")
+                    
+
                 else:
                     self.analysis_running = True
                     self.analysis_thread = threading.Thread(target=self.run_analysis)
@@ -224,8 +229,10 @@ class GUI:
             
             if self.values["Golay"]:
                 filtering_method = "Golay"
-            else:
+            elif self.values["Smooth"]:
                 filtering_method = "Smooth"
+            elif self.values["Combine"]:
+                filtering_method = "Combine"
 
             ind_profile = self.values["individual_profiles"]
             total_profile = self.values["total_profile"]

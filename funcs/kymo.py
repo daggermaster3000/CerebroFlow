@@ -611,7 +611,7 @@ class Kymo:
         keepers_vel = []
         
 
-        # iterate over every d-v pos
+        # iterate over every d-v pos (from ventral to dorsal)
         for i in range(self.dv_pos-self.N_avg-1,-1,-1):
             good = []
             rects = []
@@ -675,12 +675,17 @@ class Kymo:
         
         # compute the mean velocities and se
         #print(f"\rSmoothing parameters:\twindow:{gol_parms[0]}\tpolyorder:{gol_parms[1]}")
+        print("Smoothing: ",filtering_parms)
         if filtering_parms == "Golay":
             mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
             se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],gol_parms[0],gol_parms[1]) # compute the se for every dv position and smooth them
         elif filtering_parms == "Smooth":
             mean_velocities = smooth([np.average(i) for i in velocities]) # compute the mean velocities for every dv position and smooth them
             se_velocities = smooth([np.std(i) / np.sqrt(np.size(i)) for i in velocities]) # compute the se for every dv position and smooth them
+        elif filtering_parms == "Combine":
+            mean_velocities = savgol_filter(smooth([np.average(i) for i in velocities]),gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
+            se_velocities = savgol_filter(smooth([np.std(i) / np.sqrt(np.size(i)) for i in velocities]),gol_parms[0],gol_parms[1]) # compute the se for every dv position and smooth them
+
         return mean_velocities, se_velocities
 
     # helper functions
