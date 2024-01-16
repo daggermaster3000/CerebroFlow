@@ -87,7 +87,8 @@ class GUI:
 
  Usage: GUI
 
- Notes/Bugs: -Test button only works once (restart required)
+ Notes/Bugs: -Smoothing method is a combination of moving average with a Golay filter
+             -Test button only works once (restart required)
              -Variablity between input images is quite high
 
 
@@ -222,11 +223,13 @@ class GUI:
             group_name = self.values["group_name"] if self.values["Custom"] else None
             gol_parms = (int(self.values["smoothwindow"]),int(self.values["smoothpoly"]))
 
+            # get the parms for thresholding
             if self.values["method_hardcore"]:
                 thresholding_method = "Hardcore"
             else:
                 thresholding_method = "Quantile"
-            
+
+            # get the parms for smoothing
             if self.values["Golay"]:
                 filtering_method = "Golay"
             elif self.values["Smooth"]:
@@ -234,6 +237,7 @@ class GUI:
             elif self.values["Combine"]:
                 filtering_method = "Combine"
 
+            # get the output parms
             ind_profile = self.values["individual_profiles"]
             total_profile = self.values["total_profile"]
             profile_overlay = self.values["profile_overlay"]
