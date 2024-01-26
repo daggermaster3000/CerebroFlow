@@ -4,8 +4,8 @@ import pandas as pd
 import PySimpleGUI as sg
 from matplotlib.backends.backend_pdf import PdfPages
 import sys
-sys.path.append('funcs')
-from cerebroflow import kymo as ky
+sys.path.append('cerebroflow')
+import kymo as ky
 from scipy import stats
 
 # set output

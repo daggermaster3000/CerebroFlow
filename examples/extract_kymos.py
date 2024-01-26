@@ -1,13 +1,15 @@
+# Code to generate and save kymographs
+
 import sys
 sys.path.append('cerebroflow')
-from cerebroflow import kymo as ky
+import kymo as ky
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
 import os as os
 import PIL
 from skimage import io
 import numpy as np
-# Code to generate and save kymographs
+
 
 # Prompt user to choose file
 folder = sg.popup_get_folder("", no_window=True)

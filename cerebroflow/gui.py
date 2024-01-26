@@ -1,5 +1,7 @@
+import sys
+sys.path.append('cerebroflow')
 import PySimpleGUI as sg
-from cerebroflow import kymo as ky
+import kymo as ky
 import pandas as pd
 from scipy.signal import savgol_filter
 import numpy as np

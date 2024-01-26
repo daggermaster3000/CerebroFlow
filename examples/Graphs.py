@@ -1,4 +1,6 @@
-from funcs import kymo as ky
+import sys
+sys.path.append('cerebroflow')
+import kymo as ky
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
 import matplotlib.image
