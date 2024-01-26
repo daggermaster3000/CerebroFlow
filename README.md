@@ -1,5 +1,5 @@
 # CerebroFlow
-A tool to generate csf flow profiles based on a kymographic approach as well as other utilities 
+A tool to generate csf flow profiles based on an automatic kymograph analysis approach.
 </br>
 
 ![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/2afe5815-18c9-40e9-95eb-1bb88d05eea1)
@@ -24,6 +24,7 @@ run `gui.py` and a simple GUI will appear. The dashboard isn't implemented yet, 
 
 
 ### If you want to code
+Check the examples folder.
 Example code:
 ```python
 from funcs import kymo as ky
