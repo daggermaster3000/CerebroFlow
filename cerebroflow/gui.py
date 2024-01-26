@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import threading
 import sys
 from io import StringIO
-import time
 import warnings
 import shutil 
 import subprocess
