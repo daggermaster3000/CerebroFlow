@@ -91,11 +91,8 @@ class GUI:
              -Variablity between input images is quite high
 
 
-
-
-
 """
-        print(welcome)
+        #print(welcome)
         # Event loop
         while True:
             self.event, self.values = self.window.read()
@@ -387,7 +384,8 @@ class GUI:
         exp.test_filter()
     
     
-    
+#gui = GUI()
+#gui.start()
 
 
 

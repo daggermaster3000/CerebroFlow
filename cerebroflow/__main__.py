@@ -10,17 +10,18 @@ def main():
     f = Figlet(font='slant')
     print(f"{f.renderText('Cerebroflow')}v.{cerebroflow.__version__}")
     print("""
-
- A tool to generate and analyze kymographs from central canal csf particle flow images.
-
- Usage: --gui: Opens a graphical user interface
-           -h: Displays this message
+                                                                            
+ A tool to generate and analyze kymographs from central canal csf particle flow images.     o
+                                                                                           o 
+ Usage: --gui: Opens a graphical user interface                                             o
+           -h: Displays this message                                                    ><'>
 
           
  Notes/Bugs: -Smoothing method is a combination of moving average with a Golay filter
              -Test button only works once (restart required)
              -Variablity between input images is quite high
-          
+
+                    
           """)
     # Add the --gui option
     parser.add_argument("--gui", action="store_true",help="Run the GUI")

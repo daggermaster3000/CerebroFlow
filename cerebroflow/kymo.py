@@ -12,7 +12,7 @@ from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider
-
+from tqdm import tqdm
 
 
 class Kymo:
@@ -295,9 +295,9 @@ class Kymo:
         if dash:
             self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder, dash=dash) 
 
-        print("\033[0;37;92m",end="") 
+        
         print("Done! ")
-        print("\033[0;37;40m")
+       
         print()
         return self.mean_velocities, self.se_velocities
     
@@ -535,9 +535,10 @@ class Kymo:
         
         if method == "Hardcore":
             # rescale the intensities directly
-            for i in range(len(kymo)):
+            print("Rescaling kymograph")
+            for i in tqdm(range(len(kymo))):
                 kymo[i,:,:] = self.rescale(kymo[i,:,:],0,1)
-                print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
+                #print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
             
             return kymo
 
@@ -556,7 +557,8 @@ class Kymo:
 
             # next we normalize the kymograph by the average value with respect to time
             avg_vs_time = np.tile(kymo.mean(axis=(0,2)),(self.width,1)).transpose()
-            for i in range(kymo.shape[0]):
+            print("Normalizing kymograph:")
+            for i in tqdm(range(kymo.shape[0])):
                 kymo[i,:,:] = np.divide(kymo[i,:,:],avg_vs_time)
             
             # Next we pre-allocate some memory
@@ -568,7 +570,8 @@ class Kymo:
 
             # TODO pre allocate to save some time
             kymo_avg = []
-            for i in range(0,self.dv_pos-self.N_avg):
+            print("Linking trajectories:")
+            for i in tqdm(range(0,self.dv_pos-self.N_avg)):
                 kymo_avg.append(np.mean(kymo[i:i+self.N_avg,:,:],0))
             kymo_avg = np.array(kymo_avg)
             return kymo_avg.copy()
@@ -612,17 +615,19 @@ class Kymo:
         
 
         # iterate over every d-v pos (from ventral to dorsal)
-        for i in range(self.dv_pos-self.N_avg-1,-1,-1):
+        print(f"Detecting blobs and calculating velocitiesfor d-v positions:")
+        for i in tqdm(range(self.dv_pos-self.N_avg-1,-1,-1)):
             good = []
             rects = []
             # detect blobs
-            print(f"Detecting and processing blobs for d-v positions: {np.round(i/(self.dv_pos-self.N_avg)*100)}%",end = "\r")
+            #print(f"Detecting and processing blobs for d-v positions: {np.round(i/(self.dv_pos-self.N_avg)*100)}%",end = "\r")
             
             _, labeled_img, stats, centroids = cv2.connectedComponentsWithStats(binary_kymo[i].astype(np.uint8), connectivity=8)
             # labeled_img = label(binary_kymo[i],background=0)
             self.labeled_img_array.append(labeled_img)
             
             # iterate over every blob
+            #print("Calculating velocities:")
             for region in regionprops(labeled_img):
             # take regions with large enough areas good eccentricity and orientation
                 if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1) and (region.area <= 150):
@@ -732,11 +737,12 @@ class Kymo:
         # create cache if non existent
         if "cache" not in os.listdir():
             os.mkdir("cache")
-        print(f"----- Input image: {self.name}\n")
+        print(f"Input file: {self.name}\n")
         # process the time lapse to array if it hasnt previously been processed
-        if self.name.split(".")[0]+".npy" not in os.listdir("cache"):    
-            for ind,im in enumerate(self.data):
-                print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
+        if self.name.split(".")[0]+".npy" not in os.listdir("cache"):
+            print("Processing images:")    
+            for ind,im in tqdm(enumerate(self.data)):
+                #print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
                 self.images.append(im)
             self.cache()
         else:
