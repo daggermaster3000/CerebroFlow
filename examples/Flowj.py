@@ -1,4 +1,4 @@
-from funcs import kymo as ky
+from cerebroflow import kymo as ky
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
 import os as os

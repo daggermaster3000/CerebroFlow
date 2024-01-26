@@ -5,7 +5,7 @@ import PySimpleGUI as sg
 from matplotlib.backends.backend_pdf import PdfPages
 import sys
 sys.path.append('funcs')
-import kymo as ky
+from cerebroflow import kymo as ky
 from scipy import stats
 
 # set output
