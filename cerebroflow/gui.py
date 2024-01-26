@@ -1,7 +1,5 @@
-import sys
-sys.path.append('cerebroflow')
 import PySimpleGUI as sg
-import kymo as ky
+import cerebroflow.kymo as ky
 import pandas as pd
 from scipy.signal import savgol_filter
 import numpy as np
@@ -82,7 +80,7 @@ class GUI:
   ___  ____  ____  ____  ____  ____  _____  ____  __    _____  _    _                     o
  / __)( ___)(  _ \( ___)(  _ \(  _ \(  _  )( ___)(  )  (  _  )( \/\/ )                     o                   
 ( (__  )__)  )   / )__)  ) _ < )   / )(_)(  )__)  )(__  )(_)(  )    (                     o
- \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__) v.1.7.0        ><'>
+ \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__)               ><'>
 
  A tool to generate and analyze kymographs from central canal csf particle flow images.
 
@@ -392,7 +390,6 @@ class GUI:
     
 
 
-Gui = GUI()
-Gui.start()
+
 
 
