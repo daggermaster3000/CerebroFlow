@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='cerebroflow',
-    version='0.1.6',    
+    version='0.1.7',    
     description='Cerebroflow',
     long_description='A package to generate csf flow profiles from csf flow experiments',
     url='https://github.com/daggermaster3000/CerebroFlow/tree/library_organisation',
@@ -18,6 +18,8 @@ setup(
                     'TiffCapture',
                     'pandas',
                     'numpy',
+                    'tqdm',
+                    'pyfiglet'
                       ],
 
     classifiers=[

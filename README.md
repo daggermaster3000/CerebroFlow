@@ -6,16 +6,20 @@ A tool to generate csf flow profiles based on an automatic kymograph analysis ap
 
 
 
-## Requirements
-Run the following command in the console to install the requirements
+## Installation
+To install just run
 ```bash
-pip install matplotlib PySimpleGUI opencv-python scipy scikit-image TiffCapture pandas
+pip install cerebroflow
 ```
 
 ## Usage 
 
 ### Using the GUI
-run `gui.py` and a simple GUI will appear. The dashboard isn't implemented yet, it will output individual flow profiles as well as the mean flow profile of all the analyzed images and a csv file containing the data.
+To use cerebroflow with the gui, run the following in your python environment.
+```bash
+python -m cerebroflow --gui
+```
+Run analysis will output individual flow profiles as well as the mean flow profile of all the analyzed images and a csv file containing the data.
 </br>
 </br>
 ![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/35a4a91d-c408-4b9b-987a-96aeb4b81472)

@@ -21,7 +21,7 @@ class GUI:
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
-            [sg.Text("Cerebroflow v.dv-axis issue", font=("Helvetica", 20))],
+            [sg.Text("Cerebroflow", font=("Helvetica", 20))],
             [sg.Column([
             [sg.Text("Input(s):         "), sg.InputText(key="image_path"), sg.FilesBrowse()],
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
@@ -98,7 +98,6 @@ class GUI:
             self.event, self.values = self.window.read()
             self.done_test = threading.Event()
 
-
             if self.event == sg.WIN_CLOSED or self.event == "Exit":
                 # Close the window
                 self.window.close()
@@ -111,13 +110,11 @@ class GUI:
                     sg.popup("Analysis in progress please wait...", title="CSF Flow Analysis")
                 if not self.values["output_path"]:
                     sg.popup_error("Please provide output location", title="Error")
-                    
 
                 else:
                     self.analysis_running = True
                     self.analysis_thread = threading.Thread(target=self.run_analysis)
                     self.analysis_thread.start()
-                    
 
             elif self.event == "Test threshold":
                 self.test_threshold()
@@ -209,6 +206,8 @@ class GUI:
 
 
             output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionary for output
+            
+            # get the input parameters
             image_path = self.values["image_path"]
             output_folder = os.path.normpath(self.values["output_path"])
             pixel_size = float(self.values["pixel_size"])
