@@ -2,7 +2,8 @@
 A tool to generate csf flow profiles based on an automatic kymograph analysis approach.
 </br>
 
-![image](https://github.com/daggermaster3000/CerebroFlow/assets/82659911/2afe5815-18c9-40e9-95eb-1bb88d05eea1)
+<img width="757" alt="terminal image" src="https://github.com/daggermaster3000/CerebroFlow/assets/82659911/78bd6876-96be-4d15-b8d8-577b9c4d4cc5">
+
 
 
 
@@ -19,12 +20,15 @@ To use cerebroflow with the gui, run the following in your python environment.
 ```bash
 python -m cerebroflow --gui
 ```
-Run analysis will output individual flow profiles as well as the mean flow profile of all the analyzed images and a csv file containing the data.
 </br>
 </br>
-<img width="617" alt="Screenshot 2024-01-29 at 09 24 07" src="https://github.com/daggermaster3000/CerebroFlow/assets/82659911/1f7fda5f-ef79-499a-b729-4aa7a0e1ad81">
-<img width="794" alt="Screenshot 2024-01-29 at 09 23 53" src="https://github.com/daggermaster3000/CerebroFlow/assets/82659911/3f5ca22d-1bf0-4099-acb7-fd03d838b53a">
-
+This should open the following window: 
+<img width="812" alt="image" src="https://github.com/daggermaster3000/CerebroFlow/assets/82659911/6b554f46-47e4-4cca-a80e-a5c2925c261a"></br>
+Add the path to your data as well as an output path. Next adjust your settings for the analysis in the `settings` tab.
+<img width="812" alt="image" src="https://github.com/daggermaster3000/CerebroFlow/assets/82659911/e24f4d7c-2605-4c72-9335-f28dbb12d58c"></br>
+Finally don't forget to name your output file.
+<img width="812" alt="image" src="https://github.com/daggermaster3000/CerebroFlow/assets/82659911/1343d2f3-2af5-43f5-a7e3-190ad8031bb4"></br>
+`Run analysis` will output individual flow profiles as well as the mean flow profile of all the analyzed images and a csv file containing the data.
 
 
 ### If you want to code
