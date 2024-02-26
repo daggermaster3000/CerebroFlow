@@ -3,3 +3,9 @@
 *.pyc
 *.bat
 *.pdf
+*.cpython
+build/
+cache/
+dist/
+__pycache__/
+*.sh

@@ -1,5 +1,5 @@
 import PySimpleGUI as sg
-from funcs import kymo as ky
+import cerebroflow.kymo as ky
 import pandas as pd
 from scipy.signal import savgol_filter
 import numpy as np
@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import threading
 import sys
 from io import StringIO
-import time
 import warnings
 import shutil 
 import subprocess
@@ -22,7 +21,7 @@ class GUI:
         # Define the layout of the GUI
         self.output_element = sg.Multiline(size=(100, 10), key="-OUTPUT-", autoscroll=True) #for console display
         self.layout = [
-            [sg.Text("Cerebroflow v.dv-axis issue", font=("Helvetica", 20))],
+            [sg.Text("Cerebroflow", font=("Helvetica", 20))],
             [sg.Column([
             [sg.Text("Input(s):         "), sg.InputText(key="image_path"), sg.FilesBrowse()],
             [sg.Text("Output Folder:"), sg.InputText(key="output_path"), sg.FolderBrowse()],
@@ -33,6 +32,9 @@ class GUI:
             [sg.Text("Filter size (px):"), sg.InputText(key="filter_size", size=(6,2), default_text = None)],
             [sg.Text("Threshold:"), sg.InputText(key="threshold", size=(6,2), default_text = 0.5)],
             [sg.Text("Smoothing window:"), sg.InputText(key="smoothwindow", size=(6,2), default_text = 60),sg.Text("Smoothing polyorder:"), sg.InputText(key="smoothpoly", size=(6,2), default_text = 3)],
+            [sg.Radio("Golay", "Filtering", key="Golay"),
+            sg.Radio("Smooth", "Filtering", key="Smooth"),
+            sg.Radio("Combine", "Filtering", key="Combine", default=True)],
             [sg.Text("Thresholding Method:")],
             [sg.Radio("Hardcore", "thresholding", key="method_hardcore"),
             sg.Radio("Quantile", "thresholding", key="method_quantile", default=True)]]
@@ -78,26 +80,23 @@ class GUI:
   ___  ____  ____  ____  ____  ____  _____  ____  __    _____  _    _                     o
  / __)( ___)(  _ \( ___)(  _ \(  _ \(  _  )( ___)(  )  (  _  )( \/\/ )                     o                   
 ( (__  )__)  )   / )__)  ) _ < )   / )(_)(  )__)  )(__  )(_)(  )    (                     o
- \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__) v.1.7.0        ><'>
+ \___)(____)(_)\_)(____)(____/(_)\_)(_____)(__)  (____)(_____)(__/\__)               ><'>
 
  A tool to generate and analyze kymographs from central canal csf particle flow images.
 
  Usage: GUI
 
- Notes/Bugs: -Test button only works once (restart required)
+ Notes/Bugs: -Smoothing method is a combination of moving average with a Golay filter
+             -Test button only works once (restart required)
              -Variablity between input images is quite high
 
 
-
-
-
 """
-        print(welcome)
+        #print(welcome)
         # Event loop
         while True:
             self.event, self.values = self.window.read()
             self.done_test = threading.Event()
-
 
             if self.event == sg.WIN_CLOSED or self.event == "Exit":
                 # Close the window
@@ -109,11 +108,13 @@ class GUI:
                 
                 if self.analysis_running:
                     sg.popup("Analysis in progress please wait...", title="CSF Flow Analysis")
+                if not self.values["output_path"]:
+                    sg.popup_error("Please provide output location", title="Error")
+
                 else:
                     self.analysis_running = True
                     self.analysis_thread = threading.Thread(target=self.run_analysis)
                     self.analysis_thread.start()
-                    
 
             elif self.event == "Test threshold":
                 self.test_threshold()
@@ -195,16 +196,18 @@ class GUI:
             # check the os to define how we open the folder once the data is processed
             if sys.platform == 'darwin':
                 def openFolder(path):
-                    subprocess.check_call(['open', '--', path])
+                    subprocess.call(['open', '--', path])
             elif sys.platform == 'linux2':
                 def openFolder(path):
-                    subprocess.check_call(['xdg-open', '--', path])
+                    subprocess.call(['xdg-open', '--', path])
             elif sys.platform == 'win32':
                 def openFolder(path):
-                    subprocess.check_call(['explorer', path])
+                    subprocess.call(['explorer', path])
 
 
             output = {'name': [], 'group': [], 'means': [],'extremum': [], 'minimum': []}     # dictionary for output
+            
+            # get the input parameters
             image_path = self.values["image_path"]
             output_folder = os.path.normpath(self.values["output_path"])
             pixel_size = float(self.values["pixel_size"])
@@ -215,11 +218,21 @@ class GUI:
             group_name = self.values["group_name"] if self.values["Custom"] else None
             gol_parms = (int(self.values["smoothwindow"]),int(self.values["smoothpoly"]))
 
+            # get the parms for thresholding
             if self.values["method_hardcore"]:
                 thresholding_method = "Hardcore"
             else:
                 thresholding_method = "Quantile"
 
+            # get the parms for smoothing
+            if self.values["Golay"]:
+                filtering_method = "Golay"
+            elif self.values["Smooth"]:
+                filtering_method = "Smooth"
+            elif self.values["Combine"]:
+                filtering_method = "Combine"
+
+            # get the output parms
             ind_profile = self.values["individual_profiles"]
             total_profile = self.values["total_profile"]
             profile_overlay = self.values["profile_overlay"]
@@ -232,7 +245,7 @@ class GUI:
             else:
                 for ind, path in enumerate(paths):
                     exp = ky.Kymo(os.path.normpath(path), pixel_size=pixel_size, frame_time=frame_time, dv_thresh=self.dv_thresh)
-                    means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
+                    means, se = exp.generate_kymo(threshold=threshold, thresholding_method=thresholding_method,filtering_method=filtering_method, save_profile=ind_profile, filter_size=filter_size, output_folder=output_folder, gol_parms = gol_parms)
                     total_means.append(means)
                     output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))
                     output["group"].append(group_name)
@@ -370,10 +383,10 @@ class GUI:
         exp.test_filter()
     
     
-    
+#gui = GUI()
+#gui.start()
 
 
-Gui = GUI()
-Gui.start()
+
 
 

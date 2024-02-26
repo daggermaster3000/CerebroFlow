@@ -1,0 +1,10 @@
+matplotlib
+PySimpleGUI
+opencv-python
+scipy
+scikit-image
+TiffCapture
+pandas
+numpy
+tqdm
+pyfiglet

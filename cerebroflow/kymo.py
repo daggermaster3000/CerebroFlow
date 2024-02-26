@@ -12,7 +12,7 @@ from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider
-
+from tqdm import tqdm
 
 
 class Kymo:
@@ -44,18 +44,23 @@ class Kymo:
         self.mean_velocities = []
         self.se_velocities = []
         self.binary_kymo = []
+        self.cc_location = None
+
         # open the data
         self.data, self.name = self.open_tiff()
+        
         self.name = os.path.basename(self.name)
+
         # get some information about the data
         _, self.first_img = self.data.retrieve()
         self.dv_pos,self.width = np.shape(self.first_img)
         self.N_images = self.data.length
         # check the if a .npy was created if not create one
         self.init_bin()
+
         # convert to numpy array
         self.images = np.array(self.images,dtype='>u2')
-
+        print(np.shape(self.images))
         if filter_size != None:
 
             # if filter size is passed, filter images
@@ -228,7 +233,7 @@ class Kymo:
 
         plt.show()
 
-    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=False, gol_parms=(20,3)):
+    def generate_kymo(self, threshold: float, thresholding_method = "Quantile", filtering_method="Smooth", save_profile=False, save_display=False, filter_size = None, init_slice= 0, output_folder= None, dash=False, gol_parms=(20,3)):
         """
         Performs CSF flow analysis on kymograph data.
 
@@ -284,15 +289,16 @@ class Kymo:
         self.velocities = self.get_velocities(self.binary_kymo)
 
         # process the mean and sd of all the velocities
-        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities, gol_parms)
+        self.mean_velocities, self.se_velocities = self.get_mean_vel(self.velocities, gol_parms, filtering_parms=filtering_method)
         print(f"Detected {len(self.mean_velocities)} traces.")
 
         # show plot
-        self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder, dash=dash) 
+        if dash:
+            self.plot(save_display=save_display, save_profile=save_profile, filter_size=filter_size, init_slice=init_slice, output_folder=output_folder, dash=dash) 
 
-        print("\033[0;37;92m",end="") 
+        
         print("Done! ")
-        print("\033[0;37;40m")
+       
         print()
         return self.mean_velocities, self.se_velocities
     
@@ -530,9 +536,10 @@ class Kymo:
         
         if method == "Hardcore":
             # rescale the intensities directly
-            for i in range(len(kymo)):
+            print("Rescaling kymograph")
+            for i in tqdm(range(len(kymo))):
                 kymo[i,:,:] = self.rescale(kymo[i,:,:],0,1)
-                print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
+                #print(f"Rescaling kymograph: {np.round(i/len(kymo)*100)}%",end = "\r")
             
             return kymo
 
@@ -544,13 +551,15 @@ class Kymo:
                 means.append(np.mean(kymo[dv,:,:]))
             
             central_canal = [np.max(means), np.argmax(means)]   # returns the max intensity and location of th cc
+            self.cc_location = central_canal[1]
             min = np.quantile(kymo[central_canal[1]], threshold) # calculate the min value based on the threshold at the cc position
             kymo[kymo < min]  = min # all values smaller than min become min
             kymo = self.rescale(kymo,1,2) # rescaling between 1 and 2
 
             # next we normalize the kymograph by the average value with respect to time
             avg_vs_time = np.tile(kymo.mean(axis=(0,2)),(self.width,1)).transpose()
-            for i in range(kymo.shape[0]):
+            print("Normalizing kymograph:")
+            for i in tqdm(range(kymo.shape[0])):
                 kymo[i,:,:] = np.divide(kymo[i,:,:],avg_vs_time)
             
             # Next we pre-allocate some memory
@@ -562,7 +571,8 @@ class Kymo:
 
             # TODO pre allocate to save some time
             kymo_avg = []
-            for i in range(0,self.dv_pos-self.N_avg):
+            print("Linking trajectories:")
+            for i in tqdm(range(0,self.dv_pos-self.N_avg)):
                 kymo_avg.append(np.mean(kymo[i:i+self.N_avg,:,:],0))
             kymo_avg = np.array(kymo_avg)
             return kymo_avg.copy()
@@ -605,24 +615,26 @@ class Kymo:
         keepers_vel = []
         
 
-        # iterate over every d-v pos
-        for i in range(0,self.dv_pos-self.N_avg):
+        # iterate over every d-v pos (from ventral to dorsal)
+        print(f"Detecting blobs and calculating velocitiesfor d-v positions:")
+        for i in tqdm(range(self.dv_pos-self.N_avg-1,-1,-1)):
             good = []
             rects = []
             # detect blobs
-            print(f"Detecting and processing blobs for d-v positions: {np.round(i/(self.dv_pos-self.N_avg)*100)}%",end = "\r")
+            #print(f"Detecting and processing blobs for d-v positions: {np.round(i/(self.dv_pos-self.N_avg)*100)}%",end = "\r")
             
             _, labeled_img, stats, centroids = cv2.connectedComponentsWithStats(binary_kymo[i].astype(np.uint8), connectivity=8)
             # labeled_img = label(binary_kymo[i],background=0)
             self.labeled_img_array.append(labeled_img)
             
             # iterate over every blob
+            #print("Calculating velocities:")
             for region in regionprops(labeled_img):
             # take regions with large enough areas good eccentricity and orientation
                 if (region.area >= 15) and (region.eccentricity>0.9) and (np.abs(np.sin(region.orientation))>0.1) and (np.abs(np.cos(region.orientation))>0.1) and (region.area <= 150):
                     # if valid calculate the speed from the blob's orientation 
                     # note: no need to convert to rad as np takes rad directly and regionprops returns the orientation angle (between the vertical 0th axis and the major axis of the blob) in rad 
-                    speed = (np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  
+                    speed = -(np.tan(-region.orientation))*(self.pixel_size/self.frame_time)  
                     good.append(speed)
                     minr, minc, maxr, maxc = region.bbox
                     rects.append(mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -636,7 +648,9 @@ class Kymo:
         print()
         return keepers_vel
     
-    def get_mean_vel(self, velocities: np.ndarray, gol_parms):
+
+    
+    def get_mean_vel(self, velocities: np.ndarray, gol_parms, filtering_parms):
         """
         Computes mean velocities and standard errors from a list of velocities.
 
@@ -646,6 +660,7 @@ class Kymo:
             List of velocities for each dorso-ventral position.
         gol_parms: tuple
             Tuple of the widow length and polyorder for the savitzky golay filter
+        filtering_parms: "Golay" or "Smooth"
 
         OUTPUTS:
         --------
@@ -654,10 +669,29 @@ class Kymo:
         se_velocities: array
             Array of standard errors of velocities.
         """
+        def smooth(a,WSZ=5):
+            # a: NumPy 1-D array containing the data to be smoothed
+            # WSZ: smoothing window size needs, which must be odd number,
+            # as in the original MATLAB implementation
+            out0 = np.convolve(a,np.ones(WSZ,dtype=int),'valid')/WSZ    
+            r = np.arange(1,WSZ-1,2)
+            start = np.cumsum(a[:WSZ-1])[::2]/r
+            stop = (np.cumsum(a[:-WSZ:-1])[::2]/r)[::-1]
+            return np.concatenate((  start , out0, stop  ))
+        
         # compute the mean velocities and se
         #print(f"\rSmoothing parameters:\twindow:{gol_parms[0]}\tpolyorder:{gol_parms[1]}")
-        mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
-        se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],20,3) # compute the se for every dv position and smooth them
+        print("Smoothing: ",filtering_parms)
+        if filtering_parms == "Golay":
+            mean_velocities = savgol_filter([np.average(i) for i in velocities],gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
+            se_velocities = savgol_filter([np.std(i) / np.sqrt(np.size(i)) for i in velocities],gol_parms[0],gol_parms[1]) # compute the se for every dv position and smooth them
+        elif filtering_parms == "Smooth":
+            mean_velocities = smooth([np.average(i) for i in velocities]) # compute the mean velocities for every dv position and smooth them
+            se_velocities = smooth([np.std(i) / np.sqrt(np.size(i)) for i in velocities]) # compute the se for every dv position and smooth them
+        elif filtering_parms == "Combine":
+            mean_velocities = savgol_filter(smooth([np.average(i) for i in velocities]),gol_parms[0],gol_parms[1]) # compute the mean velocities for every dv position and smooth them
+            se_velocities = savgol_filter(smooth([np.std(i) / np.sqrt(np.size(i)) for i in velocities]),gol_parms[0],gol_parms[1]) # compute the se for every dv position and smooth them
+
         return mean_velocities, se_velocities
 
     # helper functions
@@ -704,11 +738,12 @@ class Kymo:
         # create cache if non existent
         if "cache" not in os.listdir():
             os.mkdir("cache")
-        print(f"----- Input image: {self.name}\n")
+        print(f"Input file: {self.name}\n")
         # process the time lapse to array if it hasnt previously been processed
-        if self.name.split(".")[0]+".npy" not in os.listdir("cache"):    
-            for ind,im in enumerate(self.data):
-                print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
+        if self.name.split(".")[0]+".npy" not in os.listdir("cache"):
+            print("Processing images:")    
+            for ind,im in tqdm(enumerate(self.data)):
+                #print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
                 self.images.append(im)
             self.cache()
         else:
