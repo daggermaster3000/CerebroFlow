@@ -4,7 +4,6 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtGui import QFont,QPixmap
 import os
 import cerebroflow.kymo as ky
-from cerebroflow.img_browse import ImageBrowserApp, ImageTab
 import subprocess
 import numpy as np
 import pandas as pd
@@ -188,7 +187,7 @@ class MyApp(QWidget):
         testbuttonLayout.addWidget(QPushButton('Clear Cache', self))
 
         view_graphs_button = QPushButton('View Graphs',self)
-        view_graphs_button.clicked.connect(self.start_graph_viewer)
+        #view_graphs_button.clicked.connect(self.start_graph_viewer)
         testbuttonLayout.addWidget(view_graphs_button)
         layout.addLayout(testbuttonLayout)
 
@@ -223,11 +222,6 @@ class MyApp(QWidget):
         folderPath = QFileDialog.getExistingDirectory(self, "Select Output Folder", options=options)
         if folderPath:
             self.outputPathInput.setText(folderPath)
-
-    def start_graph_viewer(self):
-        print("viewing graphs")
-        
-        window = ImageBrowserApp()
         
 
     def show_popup(self,message):
@@ -313,7 +307,7 @@ class MyApp(QWidget):
 
     def createPlots(self):
         output_folder = os.path.normpath(self.outputPathInput.text())
-        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['figure.dpi'] = 600
         self.generate_individual_plots(output_folder)
         self.generate_overlay_plot(output_folder)
 

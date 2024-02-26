@@ -1,0 +1,27 @@
+Metadata-Version: 2.1
+Name: cerebroflow
+Version: 0.1.7
+Summary: Cerebroflow
+Home-page: https://github.com/daggermaster3000/CerebroFlow/tree/library_organisation
+Author: Quillan Favey
+Author-email: quillan.favey@gmail.com
+License: BSD 2-clause
+Classifier: Development Status :: 1 - Planning
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Requires-Dist: matplotlib
+Requires-Dist: PySimpleGUI
+Requires-Dist: opencv-python
+Requires-Dist: scipy
+Requires-Dist: scikit-image
+Requires-Dist: TiffCapture
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: tqdm
+Requires-Dist: pyfiglet
+
+A package to generate csf flow profiles from csf flow experiments

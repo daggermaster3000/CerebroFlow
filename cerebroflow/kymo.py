@@ -48,6 +48,7 @@ class Kymo:
 
         # open the data
         self.data, self.name = self.open_tiff()
+        
         self.name = os.path.basename(self.name)
 
         # get some information about the data
@@ -59,7 +60,7 @@ class Kymo:
 
         # convert to numpy array
         self.images = np.array(self.images,dtype='>u2')
-
+        print(np.shape(self.images))
         if filter_size != None:
 
             # if filter size is passed, filter images
