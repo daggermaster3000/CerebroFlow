@@ -67,6 +67,8 @@ class GUI(QWidget):
         self.pixelSizeCombo.setEditable(True)
         self.pixelSizeCombo.addItems(["0.189", "0.21666666666666673", "0.16250000000000003"])
         settingsLayout.addWidget(self.pixelSizeCombo, 1, 1)
+        self.useMeta = QCheckBox('Use metadata', self, checked=True)
+        settingsLayout.addWidget(self.useMeta, 1, 2)
 
         settingsLayout.addWidget(QLabel("Frame Time (s):", self), 2, 0)
         self.frameTimeCombo = QComboBox(self)
@@ -251,6 +253,8 @@ class GUI(QWidget):
             for csv_file in os.listdir(folder_path):
                 if not csv_file.endswith('.csv'):
                     continue  # Skip if not a CSV file
+                if csv_file.startswith("._"):
+                    continue
 
                 csv_path = os.path.join(folder_path, csv_file)
 
@@ -274,6 +278,7 @@ class GUI(QWidget):
             folder_path = os.path.join(root_folder, folder_name)
             if not os.path.isdir(folder_path):
                 continue  # Skip if not a directory
+            
 
             # Create a sub-subfolder 'plots' for each folder
             folder_plots_path = os.path.join(folder_path, 'plots')
@@ -283,6 +288,8 @@ class GUI(QWidget):
             for csv_file in os.listdir(folder_path):
                 if not csv_file.endswith('.csv'):
                     continue  # Skip if not a CSV file
+                if csv_file.startswith("._"):
+                    continue
 
                 csv_path = os.path.join(folder_path, csv_file)
                 png_file = os.path.splitext(csv_file)[0] + '.png'
@@ -371,7 +378,8 @@ class GUI(QWidget):
             "ind_profile": self.individualProfilesCheckbox.isChecked(),
             "total_profile": self.totalProfileCheckbox.isChecked(),
             "profile_overlay": self.profileOverlayCheckbox.isChecked(),
-            "csv_table": self.csvTableCheckbox.isChecked()
+            "csv_table": self.csvTableCheckbox.isChecked(),
+            "use_meta": self.useMeta.isChecked(),
         }
 
         # threading stuff
@@ -439,7 +447,7 @@ class AnalysisThread(QThread):
             
                 for ind, path in enumerate(self.gui_parms["paths"]):
                     if os.path.isfile(os.path.normpath(path)):
-                        exp = ky.Kymo(os.path.normpath(path), pixel_size=self.gui_parms["pixel_size"], frame_time=self.gui_parms["frame_time"], dv_thresh=self.gui_parms["dv_thresh"])
+                        exp = ky.Kymo(os.path.normpath(path), pixel_size=self.gui_parms["pixel_size"], frame_time=self.gui_parms["frame_time"], dv_thresh=self.gui_parms["dv_thresh"],use_metadata=self.gui_parms["use_meta"])
                         means, se = exp.generate_kymo(threshold=self.gui_parms["threshold"], thresholding_method=self.gui_parms["thresholding_method"],filtering_method=self.gui_parms["filtering_method"], save_profile=self.gui_parms["ind_profile"], filter_size=self.gui_parms["filter_size"], output_folder=self.gui_parms["output_folder"], gol_parms = self.gui_parms["gol_parms"])
                         self.total_means.append(means)
                         self.output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))

@@ -13,6 +13,8 @@ import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider
 from tqdm import tqdm
+from aicsimageio import AICSImage
+from aicsimageio import readers
 
 
 class Kymo:
@@ -30,7 +32,7 @@ class Kymo:
     OUTPUTS:
     - None
     """
-    def __init__(self,path, pixel_size, frame_time, dv_thresh=0.3, filter_size=None):
+    def __init__(self,path, pixel_size, frame_time, dv_thresh=0.3, filter_size=None, use_metadata=False):
         np.seterr(all="ignore")
         self.path = path
         self.pixel_size = pixel_size    # in um
@@ -45,16 +47,24 @@ class Kymo:
         self.se_velocities = []
         self.binary_kymo = []
         self.cc_location = None
-
+        self.use_metadata = use_metadata
+        
+        # get the pixel size from meta data (will override any passed values)
+        if self.use_metadata:
+            try:
+                self.pixel_size,_ = self.get_meta_pix_size()[0]
+                print("Pixel size from metadata: ",self.pixel_size,"um")
+            except:
+                print("Pixel size could not be extracted from metadata, using the default manual input value")
+                
         # open the data
         self.data, self.name = self.open_tiff()
-        
         self.name = os.path.basename(self.name)
-
         # get some information about the data
         _, self.first_img = self.data.retrieve()
         self.dv_pos,self.width = np.shape(self.first_img)
         self.N_images = self.data.length
+
         # check the if a .npy was created if not create one
         self.init_bin()
 
@@ -714,6 +724,27 @@ class Kymo:
         name = self.path.split("\\")[-1]
         
         return tiff,name
+    
+    def get_meta_pix_size(self):
+        """
+        Opens a TIFF image file using the aicsimageio library.
+
+        INPUTS:
+        -------
+        None
+
+        OUTPUTS:
+        --------
+        pixel_size: An array containing x and y pixel sizes
+        metadata:    A string containing the metadata of the image file
+        """
+        # Get an AICSImage object (I should use it for also reading the tiffs)
+        img = AICSImage(self.path,reader=readers.TiffReader)
+        pixel_size = [img.physical_pixel_sizes.X,img.physical_pixel_sizes.Y]
+        metadata = img.metadata
+        #print(metadata)
+
+        return pixel_size,metadata
 
     def cache(self):
         """
