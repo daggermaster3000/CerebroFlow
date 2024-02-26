@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 
 
-class MyApp(QWidget):
+class GUI(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -463,6 +463,6 @@ class AnalysisThread(QThread):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MyApp()
+    window = GUI()
     sys.exit(app.exec_())
 
