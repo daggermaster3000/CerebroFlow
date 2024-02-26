@@ -190,6 +190,29 @@ class PlotWindow(QWidget):
             line = self.ax.plot(self.csv_data['x-axis'], self.csv_data['mean_vels'])[0]
             self.ax.set_xlabel("dorso-ventral axis [um]")
             self.ax.set_ylabel("Velocity [um/s]")
+            plt.legend()
+            plt.gca().get_legend().set_title("")
+            # Access the current Axes instance
+            self.ax = plt.gca()
+
+            # Change the x-axis line weight
+            self.ax.spines['bottom'].set_linewidth(2)  
+
+            # Change the y-axis line weight
+            self.ax.spines['left'].set_linewidth(2)  
+
+            self.ax.spines[['right', 'top']].set_visible(False)
+
+            # Change the x-axis label and tick label font weight
+            self.ax.set_xlabel('Relative Dorso-Ventral position [A.u.]', weight='bold')
+
+
+            # Change the y-axis label and tick label font weight
+            self.ax.set_ylabel('Relative Rostro-Caudal Velocity [A.u.]', weight='bold')
+            # Set the legend text to bold
+            legend = self.ax.legend()
+            for text in legend.get_texts():
+                text.set_fontweight('bold')
             
             self.canvas.draw()
 
