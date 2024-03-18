@@ -15,6 +15,7 @@ from matplotlib.widgets import Slider
 from tqdm import tqdm
 from aicsimageio import AICSImage
 from aicsimageio import readers
+import cerebroflow.readers as reader
 
 
 class Kymo:
@@ -63,6 +64,7 @@ class Kymo:
         # get some information about the data
         _, self.first_img = self.data.retrieve()
         self.dv_pos,self.width = np.shape(self.first_img)
+        print("problem:",np.shape(self.first_img))
         self.N_images = self.data.length
 
         # check the if a .npy was created if not create one
@@ -567,6 +569,7 @@ class Kymo:
             kymo = self.rescale(kymo,1,2) # rescaling between 1 and 2
 
             # next we normalize the kymograph by the average value with respect to time
+            print("self.width:",self.width)
             avg_vs_time = np.tile(kymo.mean(axis=(0,2)),(self.width,1)).transpose()
             print("Normalizing kymograph:")
             for i in tqdm(range(kymo.shape[0])):
@@ -720,7 +723,10 @@ class Kymo:
         name: str
             Name of the image file.
         """
-        tiff = tc.opentiff(self.path) #open img
+        if self.path.endswith(".ims"):
+            tiff = reader.read_ims_file(self.path)
+        else:
+            tiff = tc.opentiff(self.path) #open img
         name = self.path.split("\\")[-1]
         
         return tiff,name

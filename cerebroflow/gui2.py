@@ -9,9 +9,10 @@ import numpy as np
 import pandas as pd
 from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
-
-
-
+import dominate
+from dominate import document
+from dominate.tags import *
+from datetime import datetime
 
 
 
@@ -238,6 +239,7 @@ class GUI(QWidget):
         result = msg_box.exec_()
 
     def analysisThreadFinished(self):
+        
         print("Analysis is done")  
     
     def generate_overlay_plot(self,root_folder):
@@ -248,7 +250,7 @@ class GUI(QWidget):
             folder_path = os.path.join(root_folder, folder_name)
             if not os.path.isdir(folder_path):
                 continue  # Skip if not a directory
-
+            fig, axs = plt.subplots()
             # Iterate over each CSV file in the current folder
             for csv_file in os.listdir(folder_path):
                 if not csv_file.endswith('.csv'):
@@ -259,12 +261,34 @@ class GUI(QWidget):
                 csv_path = os.path.join(folder_path, csv_file)
 
                 # Read the CSV file and overlay the data on the plot
-                df = pd.read_csv(csv_path)
-                plt.plot(df['x-axis'], df['mean_vels'], label=f"{folder_name} - {csv_file[:-4]}")  # Modify label as needed
 
-            plt.xlabel("Absolute Dorso-Ventral position [um]")
-            plt.ylabel("Rostro-Caudal Velocity [um/s]")
-            plt.title(f"Overlay Plot for All CSV Files")
+                df = pd.read_csv(csv_path)
+                try:
+                    plt.plot(df['x-axis'], df['mean_vels'], label=f"{csv_file[:-4]}")
+                except:
+                    print("Failed to plot")
+
+            ax = plt.gca()
+            # Change the x-axis line weight
+            ax.spines['bottom'].set_linewidth(2)  
+
+            # Change the y-axis line weight
+            ax.spines['left'].set_linewidth(2)  
+
+            axs.spines[['right', 'top']].set_visible(False)
+
+            # Change the x-axis label and tick label font weight
+            ax.set_xlabel('Relative Dorso-Ventral position [A.u.]', weight='bold')
+
+
+            # Change the y-axis label and tick label font weight
+            ax.set_ylabel('Relative Rostro-Caudal Velocity [A.u.]', weight='bold')
+
+            # Set the legend text to bold
+            legend = ax.legend()
+            for text in legend.get_texts():
+                text.set_fontweight('bold')
+            #plt.title(f"Overlay Plot for All CSV Files")
             plt.legend()
             plt.tight_layout()
             
@@ -286,6 +310,7 @@ class GUI(QWidget):
 
             # Iterate over each CSV file in the current folder
             for csv_file in os.listdir(folder_path):
+                #print(folder_path)
                 if not csv_file.endswith('.csv'):
                     continue  # Skip if not a CSV file
                 if csv_file.startswith("._"):
@@ -301,16 +326,42 @@ class GUI(QWidget):
                     continue
 
                 # Read the CSV file and generate the plot
-                df = pd.read_csv(csv_path)
-                plt.plot(df['x-axis'], df['mean_vels'])  # Example plot, modify as needed
-                plt.title(f"Plot for {csv_file}")
-                plt.xlabel("Absolute Dorso-Ventral position [um]")
-                plt.ylabel("Rostro-Caudal Velocity [um/s]")
-                plt.savefig(png_path)
-                plt.clf()
-                plt.close()  # Close the plot to release resources
+                try:
+                    df = pd.read_csv(csv_path)
+                    # plot settings
+                    fig, axs = plt.subplots()
+                    plt.plot(df['x-axis'], df['mean_vels'],alpha=0.6) 
+                    plt.title(f"{csv_file.rstrip(".csv")}")
+
+                    ax = plt.gca()
+                    # Change the x-axis line weight
+                    ax.spines['bottom'].set_linewidth(2)  
+
+                    # Change the y-axis line weight
+                    ax.spines['left'].set_linewidth(2)  
+
+                    axs.spines[['right', 'top']].set_visible(False)
+
+                    # Change the x-axis label and tick label font weight
+                    ax.set_xlabel('Absolute Dorso-Ventral position [A.u.]', weight='bold')
+
+
+                    # Change the y-axis label and tick label font weight
+                    ax.set_ylabel('Absolute Rostro-Caudal Velocity [A.u.]', weight='bold')
+                    # Set the legend text to bold
+                    legend = ax.legend()
+                    for text in legend.get_texts():
+                        text.set_fontweight('bold')
+                    plt.xlabel("Absolute Dorso-Ventral position [um]")
+                    plt.ylabel("Rostro-Caudal Velocity [um/s]")
+                    plt.savefig(png_path)
+                    plt.clf()
+                    plt.close()  # Close the plot to release resources
+                    print(f"Plot generated for {csv_file}")
+                except:
+                    print(f"Failed to generate plot for {csv_file}")
                 
-                print(f"Plot generated for {csv_file}")
+                
 
     def createPlots(self):
         output_folder = os.path.normpath(self.outputPathInput.text())
@@ -384,13 +435,41 @@ class GUI(QWidget):
 
         # threading stuff
         if not self.popup_showed:
+            
             self.analysis_thread = AnalysisThread(self.gui_parms)
             self.analysis_thread.progress_signal.connect(self.updateProgressBar)
             self.analysis_thread.finished.connect(self.createPlots)
+            self.analysis_thread.finished.connect(self.export_gui_parms_as_html)
             self.analysis_thread.start()   
         else:
             print("Analysis aborted, incomplete parms")
             pass  
+
+
+    def export_gui_parms_as_html(self):
+        """
+        Export the analysis as html
+        """
+
+        filename = os.path.join(self.gui_parms["output_folder"], f"{self.gui_parms['group_name']}_analysis_parameters.html")
+        with document(title=f'{self.gui_parms["group_name"]} analysis') as doc:
+            h1(f'{self.gui_parms["group_name"]} analysis')
+            h2('Analysis settings')
+            list = ul()
+            for item in self.gui_parms:
+                list += li(f'{str(item)}: {str(self.gui_parms[item])}')
+            h2('Plots')
+            plots = os.path.join(self.gui_parms["output_folder"],f"csv_{self.gui_parms['group_name']}_results_thresh_{self.gui_parms['threshold']}_filt_{self.gui_parms['filter_size']}","plots")
+            for image in os.listdir(plots):
+                div(img(src=os.path.join(plots,image),style="width: 50vw; height: auto;"), _class='photo')
+            
+
+
+        with open(filename, 'w') as f:
+            f.write(doc.render())
+
+        #self.show_popup(f"PDF file generated successfully: {pdf_filename}")
+
 
 class AnalysisThread(QThread):
         progress_signal = pyqtSignal(int, int)  # Signal to send progress (current, total)
