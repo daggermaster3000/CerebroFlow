@@ -14,3 +14,4 @@
 - Export kymos as gif                                           [ ]
 - Remove the fake cache                                         [v]
 - Update the dv_thresh function                                 [ ]
+- Html plots in the report for hover values                     [ ]
