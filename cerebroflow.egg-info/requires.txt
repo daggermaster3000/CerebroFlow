@@ -8,3 +8,6 @@ pandas
 numpy
 tqdm
 pyfiglet
+dominate
+plotly
+aicsimageio

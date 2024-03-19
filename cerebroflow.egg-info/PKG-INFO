@@ -23,5 +23,8 @@ Requires-Dist: pandas
 Requires-Dist: numpy
 Requires-Dist: tqdm
 Requires-Dist: pyfiglet
+Requires-Dist: dominate
+Requires-Dist: plotly
+Requires-Dist: aicsimageio
 
 A package to generate csf flow profiles from csf flow experiments

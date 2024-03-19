@@ -7,9 +7,7 @@ import cerebroflow.kymo as ky
 import subprocess
 import numpy as np
 import pandas as pd
-from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
-import dominate
 from dominate import document
 from dominate.tags import *
 from datetime import datetime

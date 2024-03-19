@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='cerebroflow',
-    version='0.1.7',    
+    version='0.1.8',    
     description='Cerebroflow',
     long_description='A package to generate csf flow profiles from csf flow experiments',
     url='https://github.com/daggermaster3000/CerebroFlow/tree/library_organisation',
@@ -19,7 +19,10 @@ setup(
                     'pandas',
                     'numpy',
                     'tqdm',
-                    'pyfiglet'
+                    'pyfiglet',
+                    'dominate',
+                    'plotly',
+                    'aicsimageio'
                       ],
 
     classifiers=[
