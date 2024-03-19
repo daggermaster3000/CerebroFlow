@@ -457,6 +457,7 @@ class GUI(QWidget):
                 link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css")
 
             h1(f'{self.gui_parms["group_name"]} analysis',_class="title")
+            p(f'{datetime.now()}')
             h2('Analysis settings',_class="subtitle")
             list = ul()
             for item in self.gui_parms:
