@@ -331,7 +331,7 @@ class GUI(QWidget):
                     # plot settings
                     fig, axs = plt.subplots()
                     plt.plot(df['x-axis'], df['mean_vels'],alpha=0.6) 
-                    plt.title(f"{csv_file.rstrip(".csv")}")
+                    plt.title(f"{csv_file.rstrip('.csv')}")
 
                     ax = plt.gca()
                     # Change the x-axis line weight
@@ -453,15 +453,19 @@ class GUI(QWidget):
 
         filename = os.path.join(self.gui_parms["output_folder"], f"{self.gui_parms['group_name']}_analysis_parameters.html")
         with document(title=f'{self.gui_parms["group_name"]} analysis') as doc:
-            h1(f'{self.gui_parms["group_name"]} analysis')
-            h2('Analysis settings')
+            with doc.head:
+                link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css")
+
+            h1(f'{self.gui_parms["group_name"]} analysis',_class="title")
+            h2('Analysis settings',_class="subtitle")
             list = ul()
             for item in self.gui_parms:
                 list += li(f'{str(item)}: {str(self.gui_parms[item])}')
-            h2('Plots')
+            h2('Plots',_class="subtitle")
             plots = os.path.join(self.gui_parms["output_folder"],f"csv_{self.gui_parms['group_name']}_results_thresh_{self.gui_parms['threshold']}_filt_{self.gui_parms['filter_size']}","plots")
             for image in os.listdir(plots):
-                div(img(src=os.path.join(plots,image),style="width: 50vw; height: auto;"), _class='photo')
+                p(f"{image.rstrip('.png')}")
+                div(div(figure(img(src=os.path.join(plots,image)),_class="image is-4by3"),_class="column is-half"),_class="columns is-vcentered is-centered")
             
 
 
@@ -521,6 +525,17 @@ class AnalysisThread(QThread):
                                 df_ind.to_csv(os.path.join(outdir, ind_csv_filename), index=False)
                             except:
                                 raise "Error"
+                            
+        def show_popup(self,message):
+        # Create a QMessageBox
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Warning")
+            msg_box.setText(message)
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            self.popup_showed = True
+            # Show the messagebox and handle the result
+            result = msg_box.exec_()
 
         def run(self):
             
