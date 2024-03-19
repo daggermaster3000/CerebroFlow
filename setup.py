@@ -3,7 +3,9 @@ from setuptools import setup
 setup(
     name='cerebroflow',
     version='0.1.10',    
+    description_content_type="text/plain",
     description='Cerebroflow, a package to generate csf flow profiles from csf flow experiments',
+    long_description="Check the homepage for more info",
     url='https://github.com/daggermaster3000/CerebroFlow/tree/library_organisation',
     author='Quillan Favey',
     author_email='quillan.favey@gmail.com',    
@@ -22,7 +24,7 @@ setup(
                     'dominate',
                     'plotly',
                     'aicsimageio',
-                    'imaris_ims_file_reader'
+            
                       ],
 
     classifiers=[

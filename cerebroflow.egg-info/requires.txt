@@ -11,4 +11,3 @@ pyfiglet
 dominate
 plotly
 aicsimageio
-imaris_ims_file_reader

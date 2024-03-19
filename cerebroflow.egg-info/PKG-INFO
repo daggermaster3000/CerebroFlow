@@ -26,4 +26,5 @@ Requires-Dist: pyfiglet
 Requires-Dist: dominate
 Requires-Dist: plotly
 Requires-Dist: aicsimageio
-Requires-Dist: imaris_ims_file_reader
+
+Check the homepage for more info

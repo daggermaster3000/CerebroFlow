@@ -13,6 +13,9 @@ import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Slider
 from tqdm import tqdm
+from aicsimageio import AICSImage
+from aicsimageio import readers
+import cerebroflow.readers as reader
 
 
 class Kymo:
@@ -30,7 +33,7 @@ class Kymo:
     OUTPUTS:
     - None
     """
-    def __init__(self,path, pixel_size, frame_time, dv_thresh=0.3, filter_size=None):
+    def __init__(self,path, pixel_size, frame_time, dv_thresh=0.3, filter_size=None, use_metadata=False):
         np.seterr(all="ignore")
         self.path = path
         self.pixel_size = pixel_size    # in um
@@ -45,21 +48,31 @@ class Kymo:
         self.se_velocities = []
         self.binary_kymo = []
         self.cc_location = None
-
+        self.use_metadata = use_metadata
+        
+        # get the pixel size from meta data (will override any passed values)
+        if self.use_metadata:
+            try:
+                self.pixel_size,_ = self.get_meta_pix_size()[0]
+                print("Pixel size from metadata: ",self.pixel_size,"um")
+            except:
+                print("Pixel size could not be extracted from metadata, using the default manual input value")
+                
         # open the data
         self.data, self.name = self.open_tiff()
         self.name = os.path.basename(self.name)
-
         # get some information about the data
         _, self.first_img = self.data.retrieve()
         self.dv_pos,self.width = np.shape(self.first_img)
+        print("problem:",np.shape(self.first_img))
         self.N_images = self.data.length
+
         # check the if a .npy was created if not create one
-        self.init_bin()
+        self.read_data()
 
         # convert to numpy array
         self.images = np.array(self.images,dtype='>u2')
-
+        print(np.shape(self.images))
         if filter_size != None:
 
             # if filter size is passed, filter images
@@ -556,6 +569,7 @@ class Kymo:
             kymo = self.rescale(kymo,1,2) # rescaling between 1 and 2
 
             # next we normalize the kymograph by the average value with respect to time
+            print("self.width:",self.width)
             avg_vs_time = np.tile(kymo.mean(axis=(0,2)),(self.width,1)).transpose()
             print("Normalizing kymograph:")
             for i in tqdm(range(kymo.shape[0])):
@@ -709,21 +723,38 @@ class Kymo:
         name: str
             Name of the image file.
         """
-        tiff = tc.opentiff(self.path) #open img
+        if self.path.endswith(".ims"):
+            tiff = reader.read_ims_file(self.path)
+        else:
+            tiff = tc.opentiff(self.path) #open img
         name = self.path.split("\\")[-1]
         
         return tiff,name
-
-    def cache(self):
+    
+    def get_meta_pix_size(self):
         """
-        A function to save an np.array as .npy binary (not really a cache)
-        """ 
-        np.save(os.path.join("cache",self.name.split(".")[0]),self.images)
+        Opens a TIFF image file using the aicsimageio library.
 
-    def init_bin(self):
+        INPUTS:
+        -------
+        None
+
+        OUTPUTS:
+        --------
+        pixel_size: An array containing x and y pixel sizes
+        metadata:    A string containing the metadata of the image file
         """
-        init_bin
-        Initializes image data by processing time-lapse images or loading from cache if previously processed.
+        # Get an AICSImage object (I should use it for also reading the tiffs)
+        img = AICSImage(self.path,reader=readers.TiffReader)
+        pixel_size = [img.physical_pixel_sizes.X,img.physical_pixel_sizes.Y]
+        metadata = img.metadata
+        #print(metadata)
+
+        return pixel_size,metadata
+
+    def read_data(self):
+        """
+        Initializes image data by processing time-lapse images to an array (self.images).
 
         INPUTS:
         -------
@@ -733,22 +764,14 @@ class Kymo:
         --------
         None
         """
-        # check the cache to see if we haven't already processed the image
-        # create cache if non existent
-        if "cache" not in os.listdir():
-            os.mkdir("cache")
+
         print(f"Input file: {self.name}\n")
-        # process the time lapse to array if it hasnt previously been processed
-        if self.name.split(".")[0]+".npy" not in os.listdir("cache"):
-            print("Processing images:")    
-            for ind,im in tqdm(enumerate(self.data)):
-                #print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
-                self.images.append(im)
-            self.cache()
-        else:
-            # if it already has been processed load it from the cache
-            print("Loading from previous processing!")
-            self.images = np.load(os.path.join("cache",self.name.split(".")[0]+".npy"),allow_pickle=True)
+        print("Processing images:")  
+        
+        for ind,im in tqdm(enumerate(self.data)):
+            #print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
+            self.images.append(im)
+        
 
     def rescale(self,array,min,max):
         """

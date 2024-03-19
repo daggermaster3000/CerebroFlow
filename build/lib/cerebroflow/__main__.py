@@ -1,8 +1,10 @@
 
-from cerebroflow.gui import GUI
+from cerebroflow.gui2 import GUI
 import argparse
 from pyfiglet import Figlet
 import cerebroflow
+import sys
+from PyQt5.QtWidgets import QApplication
 
 def main():
 
@@ -31,9 +33,9 @@ def main():
 
     # Check if --gui option is provided
     if args.gui:
-        
-        Gui = GUI()
-        Gui.start()
+        app = QApplication(sys.argv)
+        window = GUI()
+        sys.exit(app.exec_())
     else:
         print("No option provided. Use --gui to run the GUI function or -h for help")
 
