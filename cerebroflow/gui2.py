@@ -13,7 +13,8 @@ import dominate
 from dominate import document
 from dominate.tags import *
 from datetime import datetime
-
+import plotly.graph_objects as go
+from dominate.util import raw
 
 class GUI(QWidget):
     def __init__(self):
@@ -288,7 +289,77 @@ class GUI(QWidget):
             plt.savefig(os.path.join(folder_path,'plots', 'overlay_plot.png'))
             plt.clf()
             plt.close()
+    
+    def generate_overlay_plot_html(self,root_folder):
+        fig = go.Figure()
 
+        # Iterate over each CSV file in the current folder
+        for csv_file in os.listdir(root_folder):
+            if not csv_file.endswith('.csv'):
+                continue  # Skip if not a CSV file
+            if csv_file.startswith("._"):
+                continue
+
+            csv_path = os.path.join(root_folder, csv_file)
+
+            # Read the CSV file and overlay the data on the plot
+            try:
+                df = pd.read_csv(csv_path)
+                fig.add_trace(go.Scatter(x=df['x-axis'], y=df['mean_vels'], mode='lines',
+                                        name=f"{csv_file[:-4]}"))
+            except Exception as e:
+                print(f"Failed to plot {csv_file}: {e}")
+
+        # Customize layout
+        fig.update_layout(title='Overlay Plot',
+                        xaxis_title='Dorso-Ventral position um',
+                        yaxis_title='Mean Velocities um/s'
+                      )
+
+        # Convert the figure to HTML and return
+        html_plot = fig.to_html(full_html=False)
+        return html_plot
+    
+    def generate_individual_plots_html(self, root_folder):
+        
+        for folder_name in os.listdir(root_folder): 
+            fig = go.Figure()
+
+            folder_path = os.path.join(root_folder, folder_name)
+            if not os.path.isdir(folder_path):
+                continue  # Skip if not a directory
+            
+
+            # Create a sub-subfolder 'plots' for each folder
+            folder_plots_path = os.path.join(folder_path, 'plots')
+            os.makedirs(folder_plots_path, exist_ok=True)
+
+            # Iterate over each CSV file in the current folder
+            for csv_file in os.listdir(folder_path):
+                #print(folder_path)
+                if not csv_file.endswith('.csv'):
+                    continue  # Skip if not a CSV file
+                if csv_file.startswith("._"):
+                    continue
+
+                csv_path = os.path.join(folder_path, csv_file)
+
+                # Read the CSV file and generate the plot
+                try:
+                    df = pd.read_csv(csv_path)
+                    fig.add_trace(go.Scatter(x=df['x-axis'], y=df['mean_vels'], mode='lines',
+                                            name=f"{csv_file[:-4]}"))
+                    # Customize layout
+                    fig.update_layout(title='Overlay Plot',
+                                    xaxis_title='Dorso-Ventral position um',
+                                    yaxis_title='Mean Velocities um/s')
+
+                    # Convert the figure to HTML and return
+                    html_plot = fig.to_html(full_html=False)
+                    return html_plot
+                except:
+                    print("Failed to generate html plot")
+                   
     def generate_individual_plots(self, root_folder):
         
         for folder_name in os.listdir(root_folder):
@@ -453,12 +524,13 @@ class GUI(QWidget):
             for item in self.gui_parms:
                 list += li(f'{str(item)}: {str(self.gui_parms[item])}')
             h2('Plots',_class="subtitle")
-            plots = os.path.join(self.gui_parms["output_folder"],f"{self.gui_parms['group_name']}_results_t_{self.gui_parms['threshold']}_f_{self.gui_parms['filter_size']}","plots")
-            for image in os.listdir(plots):
+            csv_folder = os.path.join(self.gui_parms["output_folder"],f"{self.gui_parms['group_name']}_results_t_{self.gui_parms['threshold']}_f_{self.gui_parms['filter_size']}")
+            with div(_class="plot-container"):
+                raw(self.generate_overlay_plot_html(csv_folder))
+            plots_folder = os.path.join(csv_folder,"plots")
+            for image in os.listdir(plots_folder):
                 p(f"{image.rstrip('.png')}")
-                div(div(figure(img(src=os.path.join(plots,image)),_class="image is-4by3"),_class="column is-half"),_class="columns is-vcentered is-centered")
-            
-
+                div(div(figure(img(src=os.path.join(plots_folder,image)),_class="image is-4by3"),_class="column is-half"),_class="columns is-vcentered is-centered")
 
         with open(filename, 'w') as f:
             f.write(doc.render())
