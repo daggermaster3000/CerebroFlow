@@ -64,7 +64,7 @@ class GUI(QWidget):
         self.pixelSizeCombo.setEditable(True)
         self.pixelSizeCombo.addItems(["0.189", "0.21666666666666673", "0.16250000000000003"])
         settingsLayout.addWidget(self.pixelSizeCombo, 1, 1)
-        self.useMeta = QCheckBox('Use metadata', self, checked=True)
+        self.useMeta = QCheckBox('Use metadata', self, checked=False)
         settingsLayout.addWidget(self.useMeta, 1, 2)
 
         settingsLayout.addWidget(QLabel("Frame Time (s):", self), 2, 0)
@@ -514,7 +514,7 @@ class GUI(QWidget):
         Export the analysis as html
         """
 
-        filename = os.path.join(self.gui_parms["output_folder"], f"{self.gui_parms['group_name']}_analysis_parameters.html")
+        filename = os.path.join(self.gui_parms["output_folder"], f"{self.gui_parms['group_name']}_analysis.html")
         with document(title=f'{self.gui_parms["group_name"]} analysis') as doc:
             with doc.head:
                 link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css")
