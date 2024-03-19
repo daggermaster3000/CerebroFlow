@@ -16,6 +16,8 @@ from datetime import datetime
 import plotly.graph_objects as go
 from dominate.util import raw
 
+from skimage import io
+
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -606,6 +608,19 @@ class AnalysisThread(QThread):
                     if os.path.isfile(os.path.normpath(path)):
                         exp = ky.Kymo(os.path.normpath(path), pixel_size=self.gui_parms["pixel_size"], frame_time=self.gui_parms["frame_time"], dv_thresh=self.gui_parms["dv_thresh"],use_metadata=self.gui_parms["use_meta"])
                         means, se = exp.generate_kymo(threshold=self.gui_parms["threshold"], thresholding_method=self.gui_parms["thresholding_method"],filtering_method=self.gui_parms["filtering_method"], save_profile=self.gui_parms["ind_profile"], filter_size=self.gui_parms["filter_size"], output_folder=self.gui_parms["output_folder"], gol_parms = self.gui_parms["gol_parms"])
+                        
+                        # save kymos
+                        output_folder = os.path.join(self.gui_parms['output_folder'],f"{self.gui_parms['group_name']}_results_t_{self.gui_parms['threshold']}_f_{self.gui_parms['filter_size']}", "kymos")
+                        output_file = os.path.join(output_folder, f"{exp.name}.tiff")
+
+                        # Create the directory if it doesn't exist
+                        if not os.path.exists(output_folder):
+                            os.makedirs(output_folder)
+
+                        # Create a figure and axis for the animation
+                        center = exp.cc_location   # get the location of the center of the cc
+                        io.imsave(output_file,exp.kymo[center].astype(np.uint16))
+                       
                         self.total_means.append(means)
                         self.output["name"].append(exp.name.replace("_cropped","").replace(".tif",""))
                         self.output["group"].append(self.gui_parms['group_name'])
