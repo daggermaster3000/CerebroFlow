@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: cerebroflow
-Version: 0.1.7
-Summary: Cerebroflow
+Version: 0.1.10
+Summary: Cerebroflow, a package to generate csf flow profiles from csf flow experiments
 Home-page: https://github.com/daggermaster3000/CerebroFlow/tree/library_organisation
 Author: Quillan Favey
 Author-email: quillan.favey@gmail.com
@@ -26,5 +26,4 @@ Requires-Dist: pyfiglet
 Requires-Dist: dominate
 Requires-Dist: plotly
 Requires-Dist: aicsimageio
-
-A package to generate csf flow profiles from csf flow experiments
+Requires-Dist: imaris_ims_file_reader

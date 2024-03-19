@@ -2,9 +2,8 @@ from setuptools import setup
 
 setup(
     name='cerebroflow',
-    version='0.1.8',    
-    description='Cerebroflow',
-    long_description='A package to generate csf flow profiles from csf flow experiments',
+    version='0.1.10',    
+    description='Cerebroflow, a package to generate csf flow profiles from csf flow experiments',
     url='https://github.com/daggermaster3000/CerebroFlow/tree/library_organisation',
     author='Quillan Favey',
     author_email='quillan.favey@gmail.com',    
@@ -22,7 +21,8 @@ setup(
                     'pyfiglet',
                     'dominate',
                     'plotly',
-                    'aicsimageio'
+                    'aicsimageio',
+                    'imaris_ims_file_reader'
                       ],
 
     classifiers=[
