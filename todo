@@ -12,5 +12,5 @@
 - Make plots nice                                               [v]
 - Fix the metadata default issue                                [ ]
 - Export kymos as gif                                           [ ]
-- Remove the fake cache                                         [ ]
+- Remove the fake cache                                         [v]
 - Update the dv_thresh function                                 [ ]

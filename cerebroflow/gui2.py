@@ -278,11 +278,11 @@ class GUI(QWidget):
             axs.spines[['right', 'top']].set_visible(False)
 
             # Change the x-axis label and tick label font weight
-            ax.set_xlabel('Relative Dorso-Ventral position [A.u.]', weight='bold')
+            ax.set_xlabel(r'Dorso-Ventral position $[\mu m]$', weight='bold')
 
 
             # Change the y-axis label and tick label font weight
-            ax.set_ylabel('Relative Rostro-Caudal Velocity [A.u.]', weight='bold')
+            ax.set_ylabel(r'Rostro-Caudal Velocity $[\mu m/s]$', weight='bold')
 
             # Set the legend text to bold
             legend = ax.legend()
@@ -348,10 +348,7 @@ class GUI(QWidget):
 
                     # Change the y-axis label and tick label font weight
                     ax.set_ylabel('Absolute Rostro-Caudal Velocity [A.u.]', weight='bold')
-                    # Set the legend text to bold
-                    legend = ax.legend()
-                    for text in legend.get_texts():
-                        text.set_fontweight('bold')
+                    
                     plt.xlabel("Absolute Dorso-Ventral position [um]")
                     plt.ylabel("Rostro-Caudal Velocity [um/s]")
                     plt.savefig(png_path)
@@ -463,7 +460,7 @@ class GUI(QWidget):
             for item in self.gui_parms:
                 list += li(f'{str(item)}: {str(self.gui_parms[item])}')
             h2('Plots',_class="subtitle")
-            plots = os.path.join(self.gui_parms["output_folder"],f"csv_{self.gui_parms['group_name']}_results_thresh_{self.gui_parms['threshold']}_filt_{self.gui_parms['filter_size']}","plots")
+            plots = os.path.join(self.gui_parms["output_folder"],f"{self.gui_parms['group_name']}_results_t_{self.gui_parms['threshold']}_f_{self.gui_parms['filter_size']}","plots")
             for image in os.listdir(plots):
                 p(f"{image.rstrip('.png')}")
                 div(div(figure(img(src=os.path.join(plots,image)),_class="image is-4by3"),_class="column is-half"),_class="columns is-vcentered is-centered")
@@ -517,7 +514,7 @@ class AnalysisThread(QThread):
                                 df_ind = pd.DataFrame({"x-axis": dv_axis, "mean_vels": vels})
                                 outdir = os.path.join(
                                     self.gui_parms['output_folder'],
-                                    f"csv_{self.gui_parms['group_name']}_results_thresh_{self.gui_parms['threshold']}_filt_{self.gui_parms['filter_size']}"
+                                    f"{self.gui_parms['group_name']}_results_t_{self.gui_parms['threshold']}_f_{self.gui_parms['filter_size']}"
                                 )
                                 ind_csv_filename = f"{name.replace('.tif', '')}.csv"
 
