@@ -15,13 +15,6 @@ from dominate.tags import *
 from datetime import datetime
 
 
-
-
-
-
-
-
-
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
