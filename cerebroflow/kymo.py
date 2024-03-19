@@ -68,7 +68,7 @@ class Kymo:
         self.N_images = self.data.length
 
         # check the if a .npy was created if not create one
-        self.init_bin()
+        self.read_data()
 
         # convert to numpy array
         self.images = np.array(self.images,dtype='>u2')
@@ -752,16 +752,9 @@ class Kymo:
 
         return pixel_size,metadata
 
-    def cache(self):
+    def read_data(self):
         """
-        A function to save an np.array as .npy binary (not really a cache)
-        """ 
-        np.save(os.path.join("cache",self.name.split(".")[0]),self.images)
-
-    def init_bin(self):
-        """
-        init_bin
-        Initializes image data by processing time-lapse images or loading from cache if previously processed.
+        Initializes image data by processing time-lapse images to an array (self.images).
 
         INPUTS:
         -------
@@ -771,22 +764,14 @@ class Kymo:
         --------
         None
         """
-        # check the cache to see if we haven't already processed the image
-        # create cache if non existent
-        if "cache" not in os.listdir():
-            os.mkdir("cache")
+
         print(f"Input file: {self.name}\n")
-        # process the time lapse to array if it hasnt previously been processed
-        if self.name.split(".")[0]+".npy" not in os.listdir("cache"):
-            print("Processing images:")    
-            for ind,im in tqdm(enumerate(self.data)):
-                #print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
-                self.images.append(im)
-            self.cache()
-        else:
-            # if it already has been processed load it from the cache
-            print("Loading from previous processing!")
-            self.images = np.load(os.path.join("cache",self.name.split(".")[0]+".npy"),allow_pickle=True)
+        print("Processing images:")  
+        
+        for ind,im in tqdm(enumerate(self.data)):
+            #print(f"Processing images {np.round(ind/self.N_images*100,1)}%",end = "\r")
+            self.images.append(im)
+        
 
     def rescale(self,array,min,max):
         """
